@@ -1,16 +1,161 @@
-# React + Vite
+# 🛡️ SaarthiAI — Your AI Insurance Companion
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> Smart. Secure. Bias-Aware. DPDP 2023 Compliant.  
+> Built for Bharat 🇮🇳
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🌟 What is SaarthiAI?
 
-## React Compiler
+SaarthiAI is an intelligent insurance advisory platform that understands your life events and recommends the right protection — instantly.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+From “I’m getting married 💍” to “Planning retirement 🌅”, SaarthiAI detects intent and suggests personalized insurance solutions using AI.
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🧠 Powered By
+
+- ⚡ React + Vite
+- 🔐 Firebase Authentication
+- ☁️ Firestore Database
+- 🤖 AI Recommendation Engine
+- 🧬 Life Event Detection System
+- 🎙 Voice Interaction Ready
+- 🛡 PII Masking + Bias Monitoring
+- 📜 DPDP 2023 Aligned Architecture
+
+---
+
+## 🔥 Core Features
+
+### ✅ AI Chat Advisor
+Conversational insurance guidance in Hindi & English.
+
+### ✅ Life Event Detection
+Automatically detects events like:
+- Marriage
+- Childbirth
+- Home Purchase
+- Retirement Planning
+
+### ✅ Smart Recommendations
+Dynamic product suggestions based on:
+- Age group
+- Occupation
+- Dependents
+- Declared life events
+
+### ✅ Secure Signup Flow
+- Google Sign-In
+- Mobile Verification (Demo OTP supported)
+- Terms & Privacy acceptance tracking
+
+### ✅ Privacy-First Design
+- PII masking before processing
+- Audit-friendly structure
+- No raw personal data exposure to AI
+
+---
+
+## 🔐 Demo OTPs
+
+For testing purposes only:
+
+```
+225705
+586546
+122644
+899662
+136439
+```
+
+> ⚠️ Production deployment must replace demo OTP system with Firebase Phone Auth.
+
+---
+
+## 🏗 Project Structure
+
+```
+src/
+│
+├── ai/                → AI logic & recommendation engine
+├── components/        → UI components (ChatWidget, VoiceButton)
+├── firebase/          → Auth & Firestore integration
+├── hooks/             → Custom hooks
+├── pages/             → Signup, Dashboard
+├── utils/             → PII masking utilities
+```
+
+---
+
+## 🚀 Getting Started
+
+### 1️⃣ Install dependencies
+```bash
+npm install
+```
+
+### 2️⃣ Run locally
+```bash
+npm run dev
+```
+
+### 3️⃣ Build for production
+```bash
+npm run build
+```
+
+---
+
+## 🌍 Deployment
+
+Works seamlessly on:
+- Vercel
+- Netlify
+
+⚠️ Remember to add your deployed domain in:
+
+Firebase Console → Authentication → Authorized Domains
+
+---
+
+## 🛡 Security & Compliance
+
+- DPDP 2023 aligned
+- No raw sensitive data logged
+- Consent capture during signup
+- Bias warnings in AI responses
+- PII masking layer before inference
+
+---
+
+## 📈 Roadmap
+
+- 🔁 Real-time policy comparison engine
+- 📊 Risk scoring dashboard
+- 🧾 PDF policy summary generator
+- 📞 Live agent handoff
+- 🏦 Insurance provider API integration
+
+---
+
+## 👨‍💻 Built With Vision
+
+SaarthiAI is built to make insurance advisory:
+- Accessible
+- Transparent
+- Ethical
+- AI-powered
+- Bharat-ready 🇮🇳
+
+---
+
+## ⭐ If You Like This Project
+
+Give it a star ⭐  
+Fork it 🍴  
+Build on top of it 🚀  
+
+---
+
+**SaarthiAI — Because protection should be intelligent.**
