@@ -236,6 +236,9 @@ export default function Signup() {
               className="w-full border border-gray-300 rounded-xl px-4 py-3 text-center text-xl font-mono tracking-widest focus:outline-none focus:border-[#0B1F4B]"
               autoFocus
             />
+<p className="text-xs text-gray-400 text-center mt-2">
+  Prototype Demo OTPs: 225705
+</p>
 
             <button
               onClick={handleVerifyOTP}
