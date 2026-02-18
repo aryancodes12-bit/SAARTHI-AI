@@ -1,3 +1,4 @@
+import ChatWidget from '../components/ChatWidget'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
