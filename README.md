@@ -1,15 +1,32 @@
 # 🛡️ SaarthiAI — Your AI Insurance Companion
 
-> Smart. Secure. Bias-Aware. DPDP 2023 Compliant.  
+> Intelligent. Secure. Bias-Aware. DPDP 2023 Aligned.  
 > Built for Bharat 🇮🇳
+
+<p align="center">
+  <img src="https://img.shields.io/badge/AI-Powered-blue?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Firebase-Integrated-orange?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/DPDP-2023%20Aligned-green?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Status-Hackathon%20Ready-purple?style=for-the-badge" />
+</p>
 
 ---
 
 ## 🌟 What is SaarthiAI?
 
-SaarthiAI is an intelligent insurance advisory platform that understands your life events and recommends the right protection — instantly.
+SaarthiAI is an AI-powered insurance advisory platform designed to deliver personalized, event-driven protection guidance.
 
-From “I’m getting married 💍” to “Planning retirement 🌅”, SaarthiAI detects intent and suggests personalized insurance solutions using AI.
+It understands key life milestones — from getting married 💍 to planning retirement 🌅 — and generates contextual insurance recommendations tailored to your financial stage, goals, and responsibilities.
+
+Unlike traditional advisory systems, SaarthiAI prioritizes:
+
+- 🧠 Context-aware intelligence  
+- 🔐 Privacy-first architecture  
+- ⚖️ Bias-aware recommendations  
+- 🇮🇳 India-ready compliance design  
+
+---
+
 
 ---
 
