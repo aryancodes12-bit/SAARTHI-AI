@@ -11,7 +11,7 @@ import { logOut } from '../firebase/auth'
 import { getUserLifeEvents, getRecommendations } from '../firebase/firestore'
 import { getAIRecommendations } from '../ai/recommendationEngine'
 import VoiceCallButton from '../components/VoiceCallButton'
-import ChatWidget from '../components/ChatWidget'
+
 
 // ----- REAL PRODUCT DATA (from your table) -----
 const PRODUCTS = [
