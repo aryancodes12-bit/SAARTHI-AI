@@ -174,5 +174,12 @@ Fork it 🍴
 Build on top of it 🚀  
 
 ---
+## Intellectual Property Notice
+
+This project is developed for hackathon participation.
+
+The source code, architecture, branding, and concept are protected.
+Commercial usage, redistribution, cloning, or derivative works
+without written permission are strictly prohibited.
 
 **SaarthiAI — Because protection should be intelligent.**
