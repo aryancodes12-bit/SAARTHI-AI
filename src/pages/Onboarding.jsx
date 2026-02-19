@@ -6,6 +6,7 @@ import { updateUserProfile } from '../firebase/firestore'
 import { saveConsentCookie } from '../utils/consentChecker'
 import { saveConsent } from '../firebase/firestore'
 import { sendOnboardingSMS } from '../utils/smsSender'
+import { sendWelcomeEmail } from '../utils/smsSender'
 
 const STEPS = [
   { id: 'profile', title: 'Your Profile', subtitle: 'Help us personalize your experience' },
@@ -38,7 +39,6 @@ export default function Onboarding() {
   })
 
   const handleProfileSubmit = async () => {
-    // Validate all required fields
     const errors = {}
     if (!profile.ageGroup) errors.ageGroup = 'Required'
     if (!profile.occupation) errors.occupation = 'Required'
@@ -55,7 +55,7 @@ export default function Onboarding() {
     setLoading(true)
     await updateUserProfile(user.uid, {
       ...profile,
-      phoneNumber: '+91' + profile.mobileNumber, // Save with +91
+      phoneNumber: '+91' + profile.mobileNumber,
       mobileNumber: '+91' + profile.mobileNumber,
       onboardingStep: 'consent',
     })
@@ -66,14 +66,13 @@ export default function Onboarding() {
   const handleConsentSubmit = async () => {
     setLoading(true)
     
-    // Save consent
     await saveConsent(user.uid, consent)
     saveConsentCookie(consent)
     grantConsent()
     await updateUserProfile(user.uid, { onboardingComplete: true })
     await refreshProfile()
     
-    // Send welcome SMS if marketing consent given
+    // Send welcome SMS
     if (consent.marketing && profile.mobileNumber) {
       try {
         await sendOnboardingSMS({
@@ -84,7 +83,19 @@ export default function Onboarding() {
         console.log('✅ Welcome SMS sent!')
       } catch (err) {
         console.error('SMS send error:', err)
-        // Don't block onboarding if SMS fails
+      }
+    }
+
+    // Send welcome Email
+    if (consent.marketing && user.email) {
+      try {
+        await sendWelcomeEmail({
+          email: user.email,
+          displayName: user.displayName,
+        })
+        console.log('✅ Welcome Email sent!')
+      } catch (err) {
+        console.error('Email send error:', err)
       }
     }
     
@@ -250,7 +261,7 @@ export default function Onboarding() {
               <p className="text-gray-500 text-sm mb-2">Your AI-powered insurance advisor is ready.</p>
               {consent.marketing && (
                 <p className="text-green-600 text-xs mb-4 flex items-center justify-center gap-1">
-                  ✓ Welcome SMS sent to +91{profile.mobileNumber}
+                  ✓ Welcome SMS & Email sent!
                 </p>
               )}
               <p className="text-gray-400 text-xs mb-6">Let's find the perfect protection for you.</p>

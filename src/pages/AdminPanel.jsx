@@ -79,13 +79,13 @@ export default function AdminPanel() {
   setSendingTestSMS(true)
   await sendRecommendationSMS(
     { 
-      phoneNumber: '+918169150113', // ✅ number already sahi hai
+      phoneNumber: '+918169150113',
       displayName: 'Test',
       uid: 'test123'
     },
     {
-      name: 'Family Health Coverage', // ✅ name add karo
-      price: 500                       // ✅ price add karo
+      name: 'Family Health Coverage',  // ← ADD KARO
+      price: 500                        // ← ADD KARO
     }
   )
   setSmsLogs(getSMSLogs())

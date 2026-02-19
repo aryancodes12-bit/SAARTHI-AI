@@ -6,6 +6,7 @@
 
 import { chatWithClaude } from './claudeAgent'
 import { addLifeEvent } from '../firebase/firestore'
+import { sendLifeEventEmail } from '../utils/smsSender'
 
 export const LIFE_EVENTS = {
   MARRIAGE: { type: 'MARRIAGE', label: '💍 Marriage', products: ['Term Life', 'Health Insurance'] },
@@ -20,8 +21,6 @@ export const LIFE_EVENTS = {
 
 /**
  * Detect life events from a user message
- * @param {string} message - User's message
- * @returns {Promise<string[]>} - Array of detected life event types
  */
 export async function detectLifeEvents(message) {
   const prompt = `
@@ -50,11 +49,8 @@ Example: ["MARRIAGE", "NEW_BABY"]
 
 /**
  * Process detected life events — save and return matching products
- * @param {string} uid
- * @param {string} message
- * @returns {Promise<{ events: object[], products: string[] }>}
  */
-export async function processLifeEvents(uid, message) {
+export async function processLifeEvents(uid, message, user = null) {
   const detectedTypes = await detectLifeEvents(message)
 
   if (detectedTypes.length === 0) return { events: [], products: [] }
@@ -65,6 +61,18 @@ export async function processLifeEvents(uid, message) {
   // Save to Firestore
   for (const event of events) {
     await addLifeEvent(uid, event)
+  }
+
+  // Send email if user has email
+  if (user?.email) {
+    for (const event of events) {
+      try {
+        await sendLifeEventEmail(user, event.label)
+        console.log('📧 Life event email sent for:', event.label)
+      } catch (err) {
+        console.error('Life event email error:', err)
+      }
+    }
   }
 
   return { events, products }

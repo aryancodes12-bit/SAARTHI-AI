@@ -1,4 +1,4 @@
-// src/utils/smsSender.js - Fast2SMS via Vercel API Route (CORS-safe, Free)
+// src/utils/smsSender.js - SMS + Email via Vercel API Routes
 
 const SMS_TEMPLATES = {
   onboarding: (name) =>
@@ -52,7 +52,7 @@ export async function sendSMS(phoneNumber, templateType, data = {}) {
       to: phoneNumber,
       message: truncatedMessage,
       status: success ? 'sent' : 'failed',
-      provider: 'fast2sms',
+      provider: 'textbelt',
       metadata: { templateType, userId: data.userId },
     })
 
@@ -62,12 +62,79 @@ export async function sendSMS(phoneNumber, templateType, data = {}) {
     console.error('❌ SMS error:', error.message)
     logSMS({
       to: phoneNumber, message: truncatedMessage,
-      status: 'failed', provider: 'fast2sms',
+      status: 'failed', provider: 'textbelt',
       metadata: { templateType, error: error.message },
     })
     return { success: false, error: error.message }
   }
 }
+
+// ── Email Functions ──────────────────────────────────────────────
+
+function getEmailContent(eventLabel, name) {
+  const templates = {
+    'New Baby': {
+      subject: `${name}, protect your growing family 👶`,
+      message: `Congratulations on your new baby, ${name}! 🎉\n\nA new baby is a beautiful milestone — and the perfect time to secure their future.\n\nWe recommend:\n• Child ULIP Plan — Build education corpus\n• Term Life Insurance — Protect your family income\n• Maternity & Newborn Plan — Cover medical expenses\n\nChat with SaarthiAI: https://saarthi-ai.vercel.app/chat`,
+    },
+    'Getting Married': {
+      subject: `${name}, plan your future together 💍`,
+      message: `Congratulations on your upcoming wedding, ${name}! 💍\n\nMarriage is a new beginning — secure your journey together.\n\nWe recommend:\n• Term Life Insurance — Protect your partner\n• Health Insurance — Family floater plan\n\nChat with SaarthiAI: https://saarthi-ai.vercel.app/chat`,
+    },
+  }
+  return templates[eventLabel] || {
+    subject: `${name}, personalized insurance advice for you`,
+    message: `Hi ${name}! 👋\n\nBased on your recent life update — ${eventLabel} — we have personalized insurance plans for you.\n\nChat with SaarthiAI: https://saarthi-ai.vercel.app/chat`,
+  }
+}
+
+export async function sendLifeEventEmail(user, eventLabel) {
+  const name = user.displayName?.split(' ')[0] || 'there'
+  const { subject, message } = getEmailContent(eventLabel, name)
+
+  try {
+    const response = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to_email: user.email,
+        to_name: user.displayName || 'Customer',
+        subject,
+        message,
+      }),
+    })
+    const result = await response.json()
+    console.log('📧 Email result:', result)
+    return { success: result.success }
+  } catch (error) {
+    console.error('❌ Email error:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+export async function sendWelcomeEmail(user) {
+  const name = user.displayName?.split(' ')[0] || 'there'
+  try {
+    const response = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to_email: user.email,
+        to_name: user.displayName || 'Customer',
+        subject: `Welcome to SaarthiAI, ${name}! 🎉`,
+        message: `Namaste ${name}! 🙏\n\nWelcome to SaarthiAI — your personal AI insurance advisor.\n\nYou can ask anything about insurance in Hindi or English.\n\nGet started: https://saarthi-ai.vercel.app/chat\n\nTeam SaarthiAI`,
+      }),
+    })
+    const result = await response.json()
+    console.log('📧 Welcome email result:', result)
+    return { success: result.success }
+  } catch (error) {
+    console.error('❌ Welcome email error:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+// ── Convenience SMS functions ────────────────────────────────────
 
 export async function sendOnboardingSMS(user) {
   return sendSMS(user.phoneNumber, 'onboarding', {
