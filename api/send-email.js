@@ -21,7 +21,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         service_id: 'service_n7mx59n',
         template_id: 'template_q17vqyq',
-        user_id: 'key-h8aFcNKUWZTN8_R4O',
+     user_id: 'h8aFcNKUWZTN8_R4O',  // key- prefix hatao
         template_params: {
           to_email,
           to_name: to_name || 'Customer',
