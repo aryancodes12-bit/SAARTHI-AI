@@ -76,21 +76,21 @@ export default function AdminPanel() {
   }
 
   const handleTestSMS = async () => {
-    setSendingTestSMS(true)
-    await sendRecommendationSMS(
-      { 
-        phoneNumber: '+918169150113', // Replace with test number
-        displayName: 'Test User',
-        uid: 'test123'
-      },
-      {
-        name: 'Family Health Coverage',
-        price: 500
-      }
-    )
-    setSmsLogs(getSMSLogs())
-    setSendingTestSMS(false)
-  }
+  setSendingTestSMS(true)
+  await sendRecommendationSMS(
+    { 
+      phoneNumber: '+918169150113', // ✅ number already sahi hai
+      displayName: 'Test',
+      uid: 'test123'
+    },
+    {
+      name: 'Family Health Coverage', // ✅ name add karo
+      price: 500                       // ✅ price add karo
+    }
+  )
+  setSmsLogs(getSMSLogs())
+  setSendingTestSMS(false)
+}
 
   const TABS = [
     { id: 'users', label: 'Users', icon: Users, count: users.length },
