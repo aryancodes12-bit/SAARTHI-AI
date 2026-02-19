@@ -1,6 +1,7 @@
 import ChatWidget from '../components/ChatWidget'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
 import {
   Shield, MessageCircle, Phone, Bell, Settings, Star,
   ChevronRight, Zap, TrendingUp, LogOut, RefreshCw, HelpCircle
@@ -12,6 +13,29 @@ import { getUserLifeEvents, getRecommendations } from '../firebase/firestore'
 import { getAIRecommendations } from '../ai/recommendationEngine'
 import VoiceCallButton from '../components/VoiceCallButton'
 
+// ----- CONFIGURATION -----
+const TEXTBEE_API_KEY = '4ecd90ed-784c-4c42-90bc-f289e92f057d'
+const TEXTBEE_DEVICE_ID = '6997280af8dad099dc95e982'
+const TEXTMEBOT_API_KEY = 'GCa1w4roma8B'
+const ONESIGNAL_APP_ID = "085dddb7-507c-40ef-9ffd-107f87fb2d65"
+
+// ----- WHATSAPP TEMPLATES -----
+const WHATSAPP_TEMPLATES = [
+  "Sarthi AI: 🚀 Welcome back! After conducting a detailed AI-driven analysis of your insurance portfolio, financial health score, and recent activity trends, we've identified a Term Life plan that strongly aligns with your protection needs and long-term financial goals. Life coverage is not just a policy — it is a financial safety net that ensures your family's stability in uncertain times. Choosing the right plan today can prevent major financial challenges tomorrow. We've simplified the process and curated a personalized recommendation just for you. Take a moment to review the insights and secure your future with confidence: https://saarthi-ai-mu.vercel.app/",
+  "Sarthi AI: ⚠️ Important Financial Update! Your Financial Health Score has been recalculated using our latest risk assessment model, portfolio tracking system, and coverage adequacy benchmarks. Our AI has identified areas where your protection strategy can be optimized to reduce potential long-term exposure. Based on this evaluation, we've generated 3 strategic recommendations tailored specifically to your financial behavior and risk profile. Reviewing these insights now could significantly strengthen your overall financial security. Access your personalized dashboard here: https://saarthi-ai-mu.vercel.app/",
+  "Sarthi AI: 🎉 Opportunity Alert! Based on your engagement history, policy structure, and profile evaluation, our system indicates that you may qualify for a premium discount or optimized pricing benefit on selected plans. Strategic adjustments at the right time can enhance your coverage while keeping your overall premium efficient. Instead of paying more later, take advantage of smart optimization today. Let our AI guide you through the most suitable option curated specifically for you. Explore your eligibility and recommendations here: https://saarthi-ai-mu.vercel.app/",
+  "Sarthi AI: ⏳ Protection Reminder — It has been some time since your family protection plans were reviewed against current economic and healthcare cost trends. With medical inflation rising steadily each year, even well-structured plans can become insufficient over time. A small coverage gap today can turn into a significant financial burden during emergencies. Our AI continuously monitors such risks and flags potential vulnerabilities before they become real problems. Take just a few minutes to reassess and strengthen your family's financial shield: https://saarthi-ai-mu.vercel.app/",
+  "Sarthi AI: 💡 Critical Coverage Insight — During our continuous monitoring process, we detected a potential gap in your current health insurance coverage when compared against projected high-cost hospitalization scenarios. In case of major treatment or extended medical care, this gap could result in unexpected out-of-pocket expenses. To prevent this financial exposure, we've generated a personalized Top-Up plan recommendation aligned with your risk profile, coverage limits, and financial health index. Strengthening your safety net today ensures stability and peace of mind tomorrow. Review your detailed analysis and recommended solution here: https://saarthi-ai-mu.vercel.app/",
+  "Sarthi AI: ⚡ Strategic Protection Enhancement Recommended — Healthcare costs are evolving rapidly, and maintaining adequate coverage requires proactive planning. Based on your policy structure, claims risk assessment, and financial behavior analytics, our AI recommends adding an optimized Top-Up layer to reinforce your protection strategy. This enhancement is designed to minimize financial shocks during high-value medical events while keeping your premium burden manageable. Taking action now ensures you remain financially resilient even in unexpected situations. Access your personalized recommendation and strengthen your coverage today: https://saarthi-ai-mu.vercel.app/"
+]
+
+// ----- SMS TEMPLATES -----
+const SMS_TEMPLATES = [
+  `Sarthi AI:\n\nWe've analyzed your insurance portfolio and identified a potential gap in your current health coverage. With rising medical costs, your existing policy may not fully protect you during high-expense hospitalizations.\n\nBased on your financial profile and risk score, we've generated a personalized Top-Up plan designed to enhance your protection without significantly increasing your premium.\n\nExplore your tailored recommendation now:\n👉 https://saarthi-ai-mu.vercel.app/\n\nStay ahead. Stay protected.`,
+  `Sarthi AI:\n\nSmart Coverage Update 💡\n\nOur AI has detected that your current health insurance may leave you exposed during major medical emergencies. Instead of waiting for a claim situation, take proactive action today.\n\nWe've curated a customized Top-Up solution aligned with your risk profile and financial health score.\n\nSecure stronger coverage now:\n👉 https://saarthi-ai-mu.vercel.app/\n\nProtection today prevents financial stress tomorrow.`,
+  `Sarthi AI:\n\nImportant Protection Alert ⚠️\n\nAfter continuously monitoring your coverage and healthcare cost trends, our system identified a possible shortfall in your health insurance limits.\n\nTo help you avoid unexpected out-of-pocket expenses, we've prepared a personalized Top-Up recommendation tailored specifically for you.\n\nReview and upgrade your protection here:\n👉 https://saarthi-ai-mu.vercel.app/\n\nTakes less than 2 minutes. Your future self will thank you.`,
+  `Sarthi AI:\n\nPersonalized Coverage Insight 💡\n\nBased on your recent activity and insurance profile, our AI recommends strengthening your health coverage with a smart Top-Up plan. This enhancement can significantly reduce financial exposure during high-value claims.\n\nView your custom recommendation and act instantly:\n👉 https://saarthi-ai-mu.vercel.app/\n\nSmarter decisions. Stronger protection.`
+]
 
 // ----- REAL PRODUCT DATA (from your table) -----
 const PRODUCTS = [
@@ -68,6 +92,8 @@ export default function CustomerDashboard() {
   const { user, userProfile } = useAuth()
   const { trackPageView, trackProductView, trackTimeOnPage, getBehaviorData } = useBehaviorTracker()
 
+  const notificationsSent = useRef(false)
+
   const [lifeEvents, setLifeEvents] = useState([])
   const [recommendations, setRecommendations] = useState([])
   const [displayedRecs, setDisplayedRecs] = useState([])
@@ -75,6 +101,9 @@ export default function CustomerDashboard() {
   const [intentScore, setIntentScore] = useState(0)
   const [refreshSeed, setRefreshSeed] = useState(0)
   const [showNotif, setShowNotif] = useState(false)
+
+  // Extract phone number
+  const displayPhone = userProfile?.phoneNumber || userProfile?.mobileNumber || userProfile?.mobile || user?.phoneNumber || "Not Found"
 
   useEffect(() => {
     trackPageView('/dashboard')
@@ -89,6 +118,72 @@ export default function CustomerDashboard() {
       updateDisplayedRecs()
     }
   }, [recommendations, refreshSeed])
+
+  // Auto-trigger notifications + OneSignal
+  useEffect(() => {
+    if (user && displayPhone !== "Not Found" && displayPhone.length > 9) {
+      if (!notificationsSent.current) {
+        notificationsSent.current = true
+        setTimeout(() => triggerNotifications(displayPhone), 2000)
+      }
+    }
+
+    const initOneSignal = async () => {
+      if (!window.OneSignalDeferred) {
+        window.OneSignalDeferred = []
+        const script = document.createElement('script')
+        script.id = 'onesignal-script'
+        script.src = "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
+        script.defer = true
+        document.head.appendChild(script)
+      }
+      window.OneSignalDeferred.push(async function (OneSignal) {
+        await OneSignal.init({
+          appId: ONESIGNAL_APP_ID,
+          allowLocalhostAsSecureOrigin: true,
+          notifyButton: { enable: true },
+        })
+        OneSignal.Slidedown.promptPush({ force: true })
+      })
+    }
+    initOneSignal()
+  }, [user, displayPhone])
+
+  const triggerNotifications = async (phoneNumber) => {
+    let formattedPhone = phoneNumber.replace(/\s/g, '')
+    if (!formattedPhone.startsWith('+')) {
+      if (formattedPhone.startsWith('0')) formattedPhone = formattedPhone.substring(1)
+      formattedPhone = '+91' + formattedPhone
+    }
+
+    console.log("🚀 Auto-Triggering (Silent Mode) for:", formattedPhone)
+
+    const randomSmsIndex = Math.floor(Math.random() * SMS_TEMPLATES.length)
+    const randomWaIndex = Math.floor(Math.random() * WHATSAPP_TEMPLATES.length)
+    const selectedSmsMsg = SMS_TEMPLATES[randomSmsIndex]
+    const selectedWaMsg = WHATSAPP_TEMPLATES[randomWaIndex]
+
+    console.log(`🎰 Selected SMS Variation: ${randomSmsIndex + 1}`)
+    console.log(`🎰 Selected WA Variation: ${randomWaIndex + 1}`)
+
+    try {
+      await axios.post(
+        `https://api.textbee.dev/api/v1/gateway/devices/${TEXTBEE_DEVICE_ID}/send-sms`,
+        { recipients: [formattedPhone], message: selectedSmsMsg },
+        { headers: { 'x-api-key': TEXTBEE_API_KEY } }
+      )
+
+      const encodedMsg = encodeURIComponent(selectedWaMsg)
+      const encodedPhone = encodeURIComponent(formattedPhone)
+      fetch(`http://api.textmebot.com/send.php?recipient=${encodedPhone}&apikey=${TEXTMEBOT_API_KEY}&text=${encodedMsg}`, {
+        mode: 'no-cors'
+      }).catch(err => console.log("WA error", err))
+
+      console.log("✅ Alerts Sent Silently")
+    } catch (error) {
+      console.error(error)
+    }
+  }
 
   const loadDashboardData = async () => {
     if (!user || !userProfile) return
@@ -251,7 +346,7 @@ export default function CustomerDashboard() {
             )}
           </div>
 
-          {/* ✅ Support Button */}
+          {/* Support Button */}
           <button
             onClick={() => navigate('/support')}
             className="text-white/50 hover:text-white transition-transform hover:scale-110"
@@ -273,6 +368,11 @@ export default function CustomerDashboard() {
               <p className="text-blue-200 text-sm">Good day,</p>
               <h1 className="text-2xl font-bold">{firstName} 👋</h1>
               <p className="text-blue-200 text-sm mt-1">Your AI advisor is ready</p>
+              {/* Phone Display */}
+              <div className="flex items-center gap-2 text-blue-200 text-xs mt-1">
+                <Phone size={12} />
+                <span>{displayPhone}</span>
+              </div>
             </div>
             <div className="text-right">
               <div className="bg-white/10 rounded-xl px-4 py-2 backdrop-blur-sm">
