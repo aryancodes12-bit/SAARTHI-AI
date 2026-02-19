@@ -1,4 +1,4 @@
-// src/utils/smsSender.js - SMS + Email via Vercel API Routes
+// src/utils/smsSender.js - SMS (mock) + Email via EmailJS browser SDK
 
 const SMS_TEMPLATES = {
   onboarding: (name) =>
@@ -13,6 +13,11 @@ const SMS_TEMPLATES = {
     `Hi ${name}, SaarthiAI here. Get personalized insurance tips via SMS? Reply YES to opt-in or STOP to opt-out.`,
 }
 
+// EmailJS config
+const EMAILJS_SERVICE_ID = 'service_n7mx59n'
+const EMAILJS_TEMPLATE_ID = 'template_q17vqyq'
+const EMAILJS_PUBLIC_KEY = 'h8aFcNKUWZTN8_R4O'
+
 function logSMS({ to, message, status, provider, metadata }) {
   const sms = {
     id: `sms_${Date.now()}`,
@@ -26,50 +31,35 @@ function logSMS({ to, message, status, provider, metadata }) {
   return sms
 }
 
-export async function sendSMS(phoneNumber, templateType, data = {}) {
-  if (!phoneNumber) return { success: false, error: 'No phone number' }
+// ── Email (browser-side EmailJS) ─────────────────────────────────────
 
-  const messageTemplate = SMS_TEMPLATES[templateType]
-  if (!messageTemplate) return { success: false, error: 'Invalid template' }
-
-  const message = typeof messageTemplate === 'function'
-    ? messageTemplate(data.name, data.event, data.product, data.reason, data.price, data.views)
-    : messageTemplate
-
-  const truncatedMessage = message.slice(0, 160)
-
+async function sendEmailDirect({ to_email, to_name, subject, message }) {
   try {
-    const response = await fetch('/api/send-sms', {
+    const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: phoneNumber, message: truncatedMessage }),
+      body: JSON.stringify({
+        service_id: EMAILJS_SERVICE_ID,
+        template_id: EMAILJS_TEMPLATE_ID,
+        user_id: EMAILJS_PUBLIC_KEY,
+        accessToken: EMAILJS_PUBLIC_KEY,
+        template_params: {
+          to_email,
+          to_name: to_name || 'Customer',
+          name: to_name || 'Customer',
+          subject,
+          message,
+        },
+      }),
     })
-
-    const result = await response.json()
-    const success = result.success === true
-
-    logSMS({
-      to: phoneNumber,
-      message: truncatedMessage,
-      status: success ? 'sent' : 'failed',
-      provider: 'textbelt',
-      metadata: { templateType, userId: data.userId },
-    })
-
-    console.log('📱 SMS result:', result)
-    return { success, data: result.data }
+    const text = await response.text()
+    console.log('📧 EmailJS response:', text)
+    return { success: response.ok, data: text }
   } catch (error) {
-    console.error('❌ SMS error:', error.message)
-    logSMS({
-      to: phoneNumber, message: truncatedMessage,
-      status: 'failed', provider: 'textbelt',
-      metadata: { templateType, error: error.message },
-    })
+    console.error('❌ Email error:', error)
     return { success: false, error: error.message }
   }
 }
-
-// ── Email Functions ──────────────────────────────────────────────
 
 function getEmailContent(eventLabel, name) {
   const templates = {
@@ -91,50 +81,50 @@ function getEmailContent(eventLabel, name) {
 export async function sendLifeEventEmail(user, eventLabel) {
   const name = user.displayName?.split(' ')[0] || 'there'
   const { subject, message } = getEmailContent(eventLabel, name)
-
-  try {
-    const response = await fetch('/api/send-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        to_email: user.email,
-        to_name: user.displayName || 'Customer',
-        subject,
-        message,
-      }),
-    })
-    const result = await response.json()
-    console.log('📧 Email result:', result)
-    return { success: result.success }
-  } catch (error) {
-    console.error('❌ Email error:', error)
-    return { success: false, error: error.message }
-  }
+  return sendEmailDirect({
+    to_email: user.email,
+    to_name: user.displayName || 'Customer',
+    subject,
+    message,
+  })
 }
 
 export async function sendWelcomeEmail(user) {
   const name = user.displayName?.split(' ')[0] || 'there'
-  try {
-    const response = await fetch('/api/send-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        to_email: user.email,
-        to_name: user.displayName || 'Customer',
-        subject: `Welcome to SaarthiAI, ${name}! 🎉`,
-        message: `Namaste ${name}! 🙏\n\nWelcome to SaarthiAI — your personal AI insurance advisor.\n\nYou can ask anything about insurance in Hindi or English.\n\nGet started: https://saarthi-ai.vercel.app/chat\n\nTeam SaarthiAI`,
-      }),
-    })
-    const result = await response.json()
-    console.log('📧 Welcome email result:', result)
-    return { success: result.success }
-  } catch (error) {
-    console.error('❌ Welcome email error:', error)
-    return { success: false, error: error.message }
-  }
+  return sendEmailDirect({
+    to_email: user.email,
+    to_name: user.displayName || 'Customer',
+    subject: `Welcome to SaarthiAI, ${name}! 🎉`,
+    message: `Namaste ${name}! 🙏\n\nWelcome to SaarthiAI — your personal AI insurance advisor.\n\nYou can ask anything about insurance in Hindi or English.\n\nGet started: https://saarthi-ai.vercel.app/chat\n\nTeam SaarthiAI`,
+  })
 }
 
-// ── Convenience SMS functions ────────────────────────────────────
+// ── SMS functions ────────────────────────────────────────────────────
+
+export async function sendSMS(phoneNumber, templateType, data = {}) {
+  if (!phoneNumber) return { success: false, error: 'No phone number' }
+
+  const messageTemplate = SMS_TEMPLATES[templateType]
+  if (!messageTemplate) return { success: false, error: 'Invalid template' }
+
+  const message = typeof messageTemplate === 'function'
+    ? messageTemplate(data.name, data.event, data.product, data.reason, data.price, data.views)
+    : messageTemplate
+
+  const truncatedMessage = message.slice(0, 160)
+
+  // Mock SMS — logs to admin panel
+  logSMS({
+    to: phoneNumber,
+    message: truncatedMessage,
+    status: 'sent',
+    provider: 'mock',
+    metadata: { templateType, userId: data.userId },
+  })
+
+  console.log('📱 SMS logged (mock):', truncatedMessage)
+  return { success: true }
+}
 
 export async function sendOnboardingSMS(user) {
   return sendSMS(user.phoneNumber, 'onboarding', {
