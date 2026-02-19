@@ -20,13 +20,14 @@ export default async function handler(req, res) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         service_id: 'service_n7mx59n',
-        template_id: 'template_ti9jmhd',
+        template_id: 'template_q17vqyq',
         user_id: 'key-h8aFcNKUWZTN8_R4O',
         template_params: {
           to_email,
           to_name: to_name || 'Customer',
           subject: subject || 'SaarthiAI — Important Update',
           message,
+          name: to_name || 'Customer',
         },
       }),
     })
