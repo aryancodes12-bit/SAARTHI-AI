@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Shield, Users, MessageCircle, Zap, LogOut, RefreshCw } from 'lucide-react'
+import { Shield, Users, MessageCircle, Zap, LogOut, RefreshCw, Send } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { logOut } from '../firebase/auth'
 import { getAllCustomers, getChatHistory } from '../firebase/firestore'
-import { db } from '../firebase/config'
+import { getSMSLogs, sendRecommendationSMS } from '../utils/smsSender'
 
 export default function AdminPanel() {
   const navigate = useNavigate()
@@ -13,10 +13,17 @@ export default function AdminPanel() {
   const [users, setUsers] = useState([])
   const [chatLogs, setChatLogs] = useState([])
   const [lifeEvents, setLifeEvents] = useState([])
+  const [smsLogs, setSmsLogs] = useState([])
   const [loading, setLoading] = useState(true)
+  const [sendingTestSMS, setSendingTestSMS] = useState(false)
 
   useEffect(() => {
     loadData()
+    // Auto-refresh SMS logs every 5 seconds
+    const interval = setInterval(() => {
+      setSmsLogs(getSMSLogs())
+    }, 5000)
+    return () => clearInterval(interval)
   }, [])
 
   const loadData = async () => {
@@ -53,6 +60,9 @@ export default function AdminPanel() {
         return bTime - aTime
       })
       setChatLogs(logs)
+      
+      // Load SMS logs
+      setSmsLogs(getSMSLogs())
     } catch (err) {
       console.error('Admin load error:', err)
     } finally {
@@ -65,10 +75,28 @@ export default function AdminPanel() {
     navigate('/')
   }
 
+  const handleTestSMS = async () => {
+    setSendingTestSMS(true)
+    await sendRecommendationSMS(
+      { 
+        phoneNumber: '+918169150113', // Replace with test number
+        displayName: 'Test User',
+        uid: 'test123'
+      },
+      {
+        name: 'Family Health Coverage',
+        price: 500
+      }
+    )
+    setSmsLogs(getSMSLogs())
+    setSendingTestSMS(false)
+  }
+
   const TABS = [
     { id: 'users', label: 'Users', icon: Users, count: users.length },
     { id: 'chats', label: 'Chat Logs', icon: MessageCircle, count: chatLogs.length },
     { id: 'events', label: 'Life Events', icon: Zap, count: lifeEvents.length },
+    { id: 'sms', label: 'SMS Campaigns', icon: Send, count: smsLogs.length },
     { id: 'agent', label: 'AI Agent', icon: Shield, count: lifeEvents.length },
   ]
 
@@ -102,7 +130,7 @@ export default function AdminPanel() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-6 flex-wrap">
           {TABS.map(tab => (
             <button
               key={tab.id}
@@ -262,6 +290,95 @@ export default function AdminPanel() {
               </div>
             )}
 
+            {/* SMS Campaigns Tab - NEW! */}
+            {activeTab === 'sms' && (
+              <div className="space-y-4">
+                {/* Test SMS Button */}
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold text-gray-800 text-sm">📱 SMS Campaign Engine</h3>
+                    <p className="text-gray-500 text-xs">Fast2SMS integration • 50 SMS/day free tier</p>
+                  </div>
+                  <button 
+                    onClick={handleTestSMS}
+                    disabled={sendingTestSMS}
+                    className="bg-[#FF6B00] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-orange-600 transition disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {sendingTestSMS ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send size={14} /> Send Test SMS
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* SMS Logs */}
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                      📱 SMS Campaign Logs
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                        {smsLogs.length} sent
+                      </span>
+                    </h3>
+                    <span className="text-xs text-gray-400">Auto-refreshes every 5s</span>
+                  </div>
+                  
+                  <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                    {smsLogs.length === 0 ? (
+                      <div className="text-center py-12 text-gray-400">
+                        <Send size={32} className="mx-auto mb-2 opacity-30" />
+                        <p className="text-sm">No SMS sent yet</p>
+                        <p className="text-xs mt-1">Click "Send Test SMS" to see it in action!</p>
+                      </div>
+                    ) : (
+                      smsLogs.map(sms => (
+                        <div key={sms.id} className="border-l-4 border-green-500 bg-green-50 p-3 rounded-lg hover:shadow-sm transition">
+                          <div className="flex justify-between items-start mb-2">
+                            <p className="text-sm font-medium text-gray-800">To: {sms.to}</p>
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                              sms.status === 'sent' || sms.status === 'delivered' 
+                                ? 'bg-green-100 text-green-700' 
+                                : sms.status === 'failed'
+                                ? 'bg-red-100 text-red-700'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}>
+                              {sms.status}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-700 bg-white p-2 rounded border border-green-100 mb-2 font-mono">
+                            {sms.message}
+                          </p>
+                          <div className="flex justify-between items-center">
+                            <p className="text-xs text-gray-400">
+                              {new Date(sms.timestamp).toLocaleString('en-IN', { 
+                                hour: '2-digit', 
+                                minute: '2-digit', 
+                                day: '2-digit', 
+                                month: 'short' 
+                              })} • {sms.metadata?.templateType || 'custom'}
+                            </p>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              sms.provider === 'fast2sms' 
+                                ? 'bg-blue-100 text-blue-600' 
+                                : 'bg-gray-100 text-gray-600'
+                            }`}>
+                              {sms.provider || 'mock'}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* AI Agent Tab */}
             {activeTab === 'agent' && (
               <div className="space-y-4">
@@ -279,7 +396,7 @@ export default function AdminPanel() {
                   {[
                     { label: 'Campaigns Run', value: lifeEvents.length, color: 'bg-orange-50 text-orange-600', icon: '🚀' },
                     { label: 'Emails Sent', value: lifeEvents.length, color: 'bg-green-50 text-green-600', icon: '📧' },
-                    { label: 'SMS Sent', value: lifeEvents.length, color: 'bg-blue-50 text-blue-600', icon: '💬' },
+                    { label: 'SMS Sent', value: smsLogs.length, color: 'bg-blue-50 text-blue-600', icon: '💬' },
                     { label: 'Ads Targeted', value: lifeEvents.length, color: 'bg-purple-50 text-purple-600', icon: '🎯' },
                   ].map((stat, i) => (
                     <div key={i} className={`${stat.color} rounded-xl p-3 text-center`}>

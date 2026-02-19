@@ -322,4 +322,40 @@ function getEmailContent(eventLabel, name) {
       <p style="color:#999;font-size:12px;margin-top:24px">SaarthiAI • DPDP 2023 Compliant</p>
     </div>`
   }
-}
+}// ═══════════════════════════════════════════════════════════════════
+// FAST2SMS — HTTP Callable Function
+// ═══════════════════════════════════════════════════════════════════
+exports.sendSMS = functions.https.onCall(async (data, context) => {
+  const { phone, message } = data
+
+  if (!phone || !message) {
+    throw new functions.https.HttpsError('invalid-argument', 'phone aur message required hain')
+  }
+
+  const cleanPhone = phone.replace(/\D/g, '').slice(-10)
+
+  try {
+    const fetch = require('node-fetch')
+    const response = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+      method: 'POST',
+      headers: {
+        'authorization': functions.config().fast2sms.key,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        route: 'q',
+        message: message,
+        language: 'english',
+        flash: 0,
+        numbers: cleanPhone,
+      }),
+    })
+
+    const result = await response.json()
+    console.log('📱 Fast2SMS:', result)
+    return { success: result.return === true, data: result }
+  } catch (error) {
+    console.error('Fast2SMS error:', error)
+    throw new functions.https.HttpsError('internal', error.message)
+  }
+})

@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { updateUserProfile } from '../firebase/firestore'
 import { saveConsentCookie } from '../utils/consentChecker'
 import { saveConsent } from '../firebase/firestore'
+import { sendOnboardingSMS } from '../utils/smsSender'
 
 const STEPS = [
   { id: 'profile', title: 'Your Profile', subtitle: 'Help us personalize your experience' },
@@ -50,9 +51,11 @@ export default function Onboarding() {
     else setPhoneError('')
 
     if (Object.keys(errors).length > 0) return
+    
     setLoading(true)
     await updateUserProfile(user.uid, {
       ...profile,
+      phoneNumber: '+91' + profile.mobileNumber, // Save with +91
       mobileNumber: '+91' + profile.mobileNumber,
       onboardingStep: 'consent',
     })
@@ -62,11 +65,29 @@ export default function Onboarding() {
 
   const handleConsentSubmit = async () => {
     setLoading(true)
+    
+    // Save consent
     await saveConsent(user.uid, consent)
     saveConsentCookie(consent)
     grantConsent()
     await updateUserProfile(user.uid, { onboardingComplete: true })
     await refreshProfile()
+    
+    // Send welcome SMS if marketing consent given
+    if (consent.marketing && profile.mobileNumber) {
+      try {
+        await sendOnboardingSMS({
+          phoneNumber: '+91' + profile.mobileNumber,
+          displayName: user.displayName,
+          uid: user.uid,
+        })
+        console.log('✅ Welcome SMS sent!')
+      } catch (err) {
+        console.error('SMS send error:', err)
+        // Don't block onboarding if SMS fails
+      }
+    }
+    
     setLoading(false)
     setStep(2)
   }
@@ -151,7 +172,7 @@ export default function Onboarding() {
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">
                   Mobile Number <span className="text-red-500">*</span>
-                  <span className="text-gray-400 ml-1 font-normal">(for AI voice advisor calls)</span>
+                  <span className="text-gray-400 ml-1 font-normal">(for SMS alerts & voice calls)</span>
                 </label>
                 <div className="flex">
                   <span className="inline-flex items-center px-3 border border-r-0 border-gray-200 rounded-l-lg bg-gray-50 text-gray-500 text-sm">
@@ -173,7 +194,7 @@ export default function Onboarding() {
                 {phoneError
                   ? <p className="text-red-500 text-xs mt-1">* {phoneError}</p>
                   : <p className="text-gray-400 text-xs mt-1 flex items-center gap-1">
-                      <Phone size={10} /> Used only for VAPI AI voice advisor — never shared
+                      <Phone size={10} /> Used for SMS campaigns & VAPI voice advisor — never shared
                     </p>
                 }
               </div>
@@ -189,14 +210,14 @@ export default function Onboarding() {
             <div className="space-y-4">
               <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-700">
                 <p className="font-semibold mb-1">Your data is protected under DPDP Act 2023</p>
-                <p className="text-xs text-blue-500">You can withdraw consent any time from Settings - Privacy</p>
+                <p className="text-xs text-blue-500">You can withdraw consent any time from Settings → Privacy</p>
               </div>
 
               {[
-                { key: 'marketing', icon: '📢', label: 'Marketing Communications', desc: 'Receive personalized insurance offers and updates' },
+                { key: 'marketing', icon: '📢', label: 'Marketing Communications', desc: 'Receive personalized offers via SMS, Email & WhatsApp' },
                 { key: 'analytics', icon: '📊', label: 'Behavioral Analytics', desc: 'Help us improve by analyzing your usage patterns' },
-                { key: 'aiProcessing', icon: '🤖', label: 'AI-Powered Recommendations', desc: 'Allow Claude AI to analyze your profile for better recommendations' },
-                { key: 'voice', icon: '📞', label: 'Voice Call Agent', desc: 'Allow VAPI AI voice agent to call you for personalized insurance guidance' },
+                { key: 'aiProcessing', icon: '🤖', label: 'AI-Powered Recommendations', desc: 'Allow AI to analyze your profile for better recommendations' },
+                { key: 'voice', icon: '📞', label: 'Voice Call Agent', desc: 'Allow VAPI AI voice agent to call you for personalized guidance' },
               ].map(item => (
                 <div key={item.key} className="flex items-start gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 cursor-pointer"
                   onClick={() => setConsent(c => ({ ...c, [item.key]: !c[item.key] }))}>
@@ -226,7 +247,13 @@ export default function Onboarding() {
                 <CheckCircle className="text-green-500" size={40} />
               </div>
               <h3 className="text-lg font-bold text-gray-800 mb-2">Welcome to SaarthiAI!</h3>
-              <p className="text-gray-500 text-sm mb-6">Your AI-powered insurance advisor is ready. Let's find the perfect protection for you.</p>
+              <p className="text-gray-500 text-sm mb-2">Your AI-powered insurance advisor is ready.</p>
+              {consent.marketing && (
+                <p className="text-green-600 text-xs mb-4 flex items-center justify-center gap-1">
+                  ✓ Welcome SMS sent to +91{profile.mobileNumber}
+                </p>
+              )}
+              <p className="text-gray-400 text-xs mb-6">Let's find the perfect protection for you.</p>
               <button onClick={() => navigate('/dashboard')}
                 className="w-full bg-[#0B1F4B] text-white py-3 rounded-xl font-bold hover:bg-blue-900 transition flex items-center justify-center gap-2">
                 Go to Dashboard <ChevronRight size={16} />

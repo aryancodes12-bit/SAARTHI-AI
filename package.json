@@ -12,6 +12,7 @@
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
     "@vapi-ai/web": "^2.5.2",
+    "axios": "^1.13.5",
     "cors": "^2.8.6",
     "date-fns": "^4.1.0",
     "dotenv": "^17.3.1",

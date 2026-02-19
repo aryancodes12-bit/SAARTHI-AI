@@ -11,6 +11,12 @@ export default defineConfig({
         target: 'http://localhost:3001',
         changeOrigin: true,
       },
+      // TextBee proxy — ad blocker bypass
+      '/textbee': {
+        target: 'https://api.textbee.dev',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/textbee/, ''),
+      },
     },
   },
 })

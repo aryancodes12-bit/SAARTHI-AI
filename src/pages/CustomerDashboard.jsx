@@ -187,7 +187,7 @@ export default function CustomerDashboard() {
               onClick={() => setShowNotif(v => !v)}
               className="relative text-white/70 hover:text-white transition-transform hover:scale-110"
             >
-              <Bell size={20} />
+              <Bell size={24} />
               {(lifeEvents.length > 0 || displayedRecs.length > 0) && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#FF6B00] rounded-full text-white text-[9px] font-bold flex items-center justify-center">
                   {lifeEvents.length + displayedRecs.length > 9 ? '9+' : lifeEvents.length + displayedRecs.length}
@@ -257,10 +257,10 @@ export default function CustomerDashboard() {
             className="text-white/50 hover:text-white transition-transform hover:scale-110"
             title="Support"
           >
-            <HelpCircle size={18} />
+            <HelpCircle size={25} />
           </button>
 
-          <button onClick={handleSignOut} className="text-white/50 hover:text-white transition-transform hover:scale-110"><LogOut size={18} /></button>
+          <button onClick={handleSignOut} className="text-white/50 hover:text-white transition-transform hover:scale-110"><LogOut size={25} /></button>
           <div className="w-8 h-8 bg-[#FF6B00] rounded-full flex items-center justify-center text-white font-bold text-sm animate-bounce [animation-duration:2s]">{firstName[0]?.toUpperCase()}</div>
         </div>
       </nav>
