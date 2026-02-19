@@ -24,8 +24,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        route: 'v3',
-        sender_id: 'FSTSMS',
+        route: 'q',
         message: message,
         language: 'english',
         flash: 0,
