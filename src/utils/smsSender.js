@@ -1,4 +1,9 @@
-// src/utils/smsSender.js - SMS (mock) + Email via EmailJS browser SDK
+// src/utils/smsSender.js
+import emailjs from '@emailjs/browser'
+
+const EMAILJS_SERVICE_ID = 'service_n7mx59n'
+const EMAILJS_TEMPLATE_ID = 'template_q17vqyq'
+const EMAILJS_PUBLIC_KEY = 'h8aFcNKUWZTN8_R4O'
 
 const SMS_TEMPLATES = {
   onboarding: (name) =>
@@ -13,11 +18,6 @@ const SMS_TEMPLATES = {
     `Hi ${name}, SaarthiAI here. Get personalized insurance tips via SMS? Reply YES to opt-in or STOP to opt-out.`,
 }
 
-// EmailJS config
-const EMAILJS_SERVICE_ID = 'service_n7mx59n'
-const EMAILJS_TEMPLATE_ID = 'template_q17vqyq'
-const EMAILJS_PUBLIC_KEY = 'h8aFcNKUWZTN8_R4O'
-
 function logSMS({ to, message, status, provider, metadata }) {
   const sms = {
     id: `sms_${Date.now()}`,
@@ -31,35 +31,7 @@ function logSMS({ to, message, status, provider, metadata }) {
   return sms
 }
 
-// ── Email (browser-side EmailJS) ─────────────────────────────────────
-
-async function sendEmailDirect({ to_email, to_name, subject, message }) {
-  try {
-    const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        service_id: EMAILJS_SERVICE_ID,
-        template_id: EMAILJS_TEMPLATE_ID,
-        user_id: EMAILJS_PUBLIC_KEY,
-        accessToken: EMAILJS_PUBLIC_KEY,
-        template_params: {
-          to_email,
-          to_name: to_name || 'Customer',
-          name: to_name || 'Customer',
-          subject,
-          message,
-        },
-      }),
-    })
-    const text = await response.text()
-    console.log('📧 EmailJS response:', text)
-    return { success: response.ok, data: text }
-  } catch (error) {
-    console.error('❌ Email error:', error)
-    return { success: false, error: error.message }
-  }
-}
+// ── Email via @emailjs/browser SDK ───────────────────────────────────
 
 function getEmailContent(eventLabel, name) {
   const templates = {
@@ -81,93 +53,83 @@ function getEmailContent(eventLabel, name) {
 export async function sendLifeEventEmail(user, eventLabel) {
   const name = user.displayName?.split(' ')[0] || 'there'
   const { subject, message } = getEmailContent(eventLabel, name)
-  return sendEmailDirect({
-    to_email: user.email,
-    to_name: user.displayName || 'Customer',
-    subject,
-    message,
-  })
+  try {
+    const result = await emailjs.send(
+      EMAILJS_SERVICE_ID,
+      EMAILJS_TEMPLATE_ID,
+      {
+        to_email: user.email,
+        to_name: user.displayName || 'Customer',
+        name: user.displayName || 'Customer',
+        subject,
+        message,
+      },
+      EMAILJS_PUBLIC_KEY
+    )
+    console.log('📧 Life event email sent:', result)
+    return { success: true }
+  } catch (error) {
+    console.error('❌ Email error:', error)
+    return { success: false, error }
+  }
 }
 
 export async function sendWelcomeEmail(user) {
   const name = user.displayName?.split(' ')[0] || 'there'
-  return sendEmailDirect({
-    to_email: user.email,
-    to_name: user.displayName || 'Customer',
-    subject: `Welcome to SaarthiAI, ${name}! 🎉`,
-    message: `Namaste ${name}! 🙏\n\nWelcome to SaarthiAI — your personal AI insurance advisor.\n\nYou can ask anything about insurance in Hindi or English.\n\nGet started: https://saarthi-ai.vercel.app/chat\n\nTeam SaarthiAI`,
-  })
+  try {
+    const result = await emailjs.send(
+      EMAILJS_SERVICE_ID,
+      EMAILJS_TEMPLATE_ID,
+      {
+        to_email: user.email,
+        to_name: user.displayName || 'Customer',
+        name: user.displayName || 'Customer',
+        subject: `Welcome to SaarthiAI, ${name}! 🎉`,
+        message: `Namaste ${name}! 🙏\n\nWelcome to SaarthiAI — your personal AI insurance advisor.\n\nYou can ask anything about insurance in Hindi or English.\n\nGet started: https://saarthi-ai.vercel.app/chat\n\nTeam SaarthiAI`,
+      },
+      EMAILJS_PUBLIC_KEY
+    )
+    console.log('📧 Welcome email sent:', result)
+    return { success: true }
+  } catch (error) {
+    console.error('❌ Welcome email error:', error)
+    return { success: false, error }
+  }
 }
 
-// ── SMS functions ────────────────────────────────────────────────────
+// ── SMS (mock) ───────────────────────────────────────────────────────
 
 export async function sendSMS(phoneNumber, templateType, data = {}) {
   if (!phoneNumber) return { success: false, error: 'No phone number' }
-
   const messageTemplate = SMS_TEMPLATES[templateType]
   if (!messageTemplate) return { success: false, error: 'Invalid template' }
-
   const message = typeof messageTemplate === 'function'
     ? messageTemplate(data.name, data.event, data.product, data.reason, data.price, data.views)
     : messageTemplate
-
   const truncatedMessage = message.slice(0, 160)
-
-  // Mock SMS — logs to admin panel
-  logSMS({
-    to: phoneNumber,
-    message: truncatedMessage,
-    status: 'sent',
-    provider: 'mock',
-    metadata: { templateType, userId: data.userId },
-  })
-
+  logSMS({ to: phoneNumber, message: truncatedMessage, status: 'sent', provider: 'mock', metadata: { templateType, userId: data.userId } })
   console.log('📱 SMS logged (mock):', truncatedMessage)
   return { success: true }
 }
 
 export async function sendOnboardingSMS(user) {
-  return sendSMS(user.phoneNumber, 'onboarding', {
-    name: user.displayName?.split(' ')[0] || 'Customer',
-    userId: user.uid,
-  })
+  return sendSMS(user.phoneNumber, 'onboarding', { name: user.displayName?.split(' ')[0] || 'Customer', userId: user.uid })
 }
-
 export async function sendLifeEventSMS(user, event, product) {
-  return sendSMS(user.phoneNumber, 'lifeEventDetected', {
-    name: user.displayName?.split(' ')[0] || 'Customer',
-    event: event.label || event,
-    product: product.name || product,
-    userId: user.uid,
-  })
+  return sendSMS(user.phoneNumber, 'lifeEventDetected', { name: user.displayName?.split(' ')[0] || 'Customer', event: event.label || event, product: product.name || product, userId: user.uid })
 }
-
 export async function sendRecommendationSMS(user, product) {
-  return sendSMS(user.phoneNumber, 'recommendation', {
-    name: user.displayName?.split(' ')[0] || 'Customer',
-    product: product.name,
-    price: product.price || Math.floor(Math.random() * 500 + 300),
-    userId: user.uid,
-  })
+  return sendSMS(user.phoneNumber, 'recommendation', { name: user.displayName?.split(' ')[0] || 'Customer', product: product.name, price: product.price || Math.floor(Math.random() * 500 + 300), userId: user.uid })
 }
-
 export async function sendBehaviorBasedSMS(user, productName, viewCount) {
-  return sendSMS(user.phoneNumber, 'behaviorBased', {
-    name: user.displayName?.split(' ')[0] || 'Customer',
-    product: productName,
-    views: viewCount,
-    userId: user.uid,
-  })
+  return sendSMS(user.phoneNumber, 'behaviorBased', { name: user.displayName?.split(' ')[0] || 'Customer', product: productName, views: viewCount, userId: user.uid })
 }
-
 export async function sendConsentSMS(phoneNumber, name) {
   return sendSMS(phoneNumber, 'consent', { name })
 }
-
 export function getSMSLogs() {
   return JSON.parse(localStorage.getItem('sms_logs') || '[]')
 }
-
 export function clearSMSLogs() {
   localStorage.removeItem('sms_logs')
 }
