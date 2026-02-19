@@ -92,7 +92,7 @@ export default function ChatWidget() {
 
         try {
             if (user) {
-                processLifeEvents(user.uid, text).then(({ events, products }) => {
+                processLifeEvents(user.uid, text, { email: user.email, displayName: userProfile?.displayName }).then(({ events, products }) => {
                     if (events.length > 0) {
                         setLifeEventAlert({ events, products })
                         setTimeout(() => setLifeEventAlert(null), 8000)
