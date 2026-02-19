@@ -1,4 +1,4 @@
-// api/send-sms.js — Vercel Serverless Function
+// api/send-sms.js — Vercel Serverless Function (Textbelt - Free)
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -9,38 +9,32 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   const { phone, message } = req.body
-
   if (!phone || !message) {
     return res.status(400).json({ error: 'phone aur message required hain' })
   }
 
-  const cleanPhone = phone.replace(/\D/g, '').slice(-10)
+  const cleanPhone = '+91' + phone.replace(/\D/g, '').slice(-10)
 
   try {
-    const response = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+    const response = await fetch('https://textbelt.com/text', {
       method: 'POST',
-      headers: {
-        'authorization': process.env.FAST2SMS_API_KEY,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        route: 'q',
+        phone: cleanPhone,
         message: message,
-        language: 'english',
-        flash: 0,
-        numbers: cleanPhone,
+        key: process.env.TEXTBELT_API_KEY || 'textbelt', // 'textbelt' = 1 free SMS/day
       }),
     })
 
     const data = await response.json()
-    console.log('📱 Fast2SMS response:', data)
+    console.log('📱 Textbelt response:', data)
 
     return res.status(200).json({
-      success: data.return === true,
+      success: data.success === true,
       data,
     })
   } catch (error) {
-    console.error('❌ Fast2SMS error:', error)
+    console.error('❌ SMS error:', error)
     return res.status(500).json({ success: false, error: error.message })
   }
 }
