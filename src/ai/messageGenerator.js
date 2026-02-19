@@ -1,6 +1,6 @@
 /**
  * Message Generator
- * Generates proactive WhatsApp/SMS messages and VAPI voice scripts
+ * Generates proactive WhatsApp/SMS messages
  * based on life events and customer profile
  */
 
@@ -38,30 +38,6 @@ Requirements:
   return result.success ? result.text : getDefaultMessage(lifeEvent, firstName, product)
 }
 
-/**
- * Generate VAPI voice call script
- */
-export async function generateVoiceScript(userProfile, topProduct) {
-  const firstName = userProfile.displayName?.split(' ')[0] || 'there'
-
-  const prompt = `
-Write a 30-second voice call opening script for an AI insurance advisor.
-
-Context:
-- Customer name: ${firstName}
-- Top recommended product: ${topProduct.name}
-- Company: SaarthiAI
-- Must mention it's an AI call and they can hang up anytime
-- Warm, professional, Indian English tone
-- End with a yes/no question to continue
-
-Format the script naturally, as it would be spoken.
-`
-
-  const result = await chatWithClaude([{ role: 'user', content: prompt }])
-  return result.success ? result.text : getDefaultVoiceScript(firstName, topProduct)
-}
-
 // ─── Fallback messages ────────────────────────────────────────────
 
 function getDefaultMessage(event, name, product) {
@@ -72,16 +48,6 @@ function getDefaultMessage(event, name, product) {
     DEFAULT: `Hi ${name}! Based on your recent activity, we think ${product.name} could be perfect for you. Want to learn more?`,
   }
   return messages[event.type] || messages.DEFAULT
-}
-
-function getDefaultVoiceScript(name, product) {
-  return `Hello, may I speak with ${name}? 
-
-Hi ${name}, this is Saarthi, your AI insurance advisor from SaarthiAI. Just to be transparent, I'm an AI assistant and you can end this call at any time.
-
-I noticed you might be interested in protecting your family's future, and I wanted to share some information about our ${product.name}, which many customers in similar situations have found very helpful.
-
-Would you like to hear more about how it could benefit you specifically? Just say yes or no.`
 }
 
 /**

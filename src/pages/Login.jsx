@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Shield, Loader, ChevronLeft } from 'lucide-react'
-import { signInWithGoogle } from '../firebase/auth'
+import { Loader, ChevronLeft } from 'lucide-react'
+import { signInWithGoogle, logOut } from '../firebase/auth'
 import { getUserProfile } from '../firebase/firestore'
 
 export default function Login() {
@@ -14,10 +14,24 @@ export default function Login() {
     setError('')
     const { success, user, error: err } = await signInWithGoogle()
     setLoading(false)
+
     if (success) {
       const profile = await getUserProfile(user.uid)
-      // If user has completed onboarding, go to dashboard; otherwise go to onboarding
-      navigate(profile?.onboardingComplete ? '/dashboard' : '/onboarding')
+      const params = new URLSearchParams(window.location.search)
+      const isAdminLogin = params.get('redirect') === 'admin'
+
+      if (isAdminLogin) {
+        // Admin Login se aaya
+        if (profile?.role === 'admin') {
+          navigate('/admin') // ✅ Admin hai — admin panel
+        } else {
+          setError('Access denied: Admins only')
+          await logOut() // ✅ Admin nahi — warning + logout
+        }
+      } else {
+        // Customer Login se aaya — hamesha dashboard
+        navigate(profile?.onboardingComplete ? '/dashboard' : '/onboarding')
+      }
     } else {
       setError(err || 'Google sign-in failed')
     }
@@ -28,12 +42,12 @@ export default function Login() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-3">
-<img
-  src="https://i.ibb.co/DywMwv9/Saarthie-1-removebg-preview.png"
-  alt="SaarthiAI Logo"
-  className="w-9 h-9 object-contain"
-/>
-<span className="text-white text-2xl font-bold">Saarthi<span className="text-[#FF6B00]">AI</span></span>
+            <img
+              src="https://i.ibb.co/DywMwv9/Saarthie-1-removebg-preview.png"
+              alt="SaarthiAI Logo"
+              className="w-9 h-9 object-contain"
+            />
+            <span className="text-white text-2xl font-bold">Saarthi<span className="text-[#FF6B00]">AI</span></span>
           </div>
           <p className="text-blue-200 text-sm">Sign in to continue to your account</p>
         </div>
@@ -60,26 +74,20 @@ export default function Login() {
           </button>
 
           {error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm text-center">
               ⚠️ {error}
             </div>
           )}
 
           <p className="text-center text-sm text-gray-500 mt-6">
             New to SaarthiAI?{' '}
-            <button
-              onClick={() => navigate('/signup')}
-              className="text-[#FF6B00] font-bold hover:underline"
-            >
+            <button onClick={() => navigate('/signup')} className="text-[#FF6B00] font-bold hover:underline">
               Create account
             </button>
           </p>
         </div>
 
-        <button
-          onClick={() => navigate('/')}
-          className="mt-6 text-blue-200 text-sm hover:text-white flex items-center gap-1 mx-auto"
-        >
+        <button onClick={() => navigate('/')} className="mt-6 text-blue-200 text-sm hover:text-white flex items-center gap-1 mx-auto">
           <ChevronLeft size={14} /> Back to home
         </button>
       </div>

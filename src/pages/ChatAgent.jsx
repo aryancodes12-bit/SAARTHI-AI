@@ -31,6 +31,7 @@ export default function ChatAgent() {
   const [loading, setLoading] = useState(false)
   const [lifeEventAlert, setLifeEventAlert] = useState(null)
   const [piiWarning, setPiiWarning] = useState(false)
+  const [showVoicePanel, setShowVoicePanel] = useState(false)
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
   const historyLoaded = useRef(false)
@@ -155,10 +156,16 @@ export default function ChatAgent() {
   }
 
   const formatMessage = (text) => {
-    return text
+    // Convert markdown links [text](url) → clickable anchor tags
+    let formatted = text.replace(
+      /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#FF6B00;text-decoration:underline;font-weight:600;cursor:pointer;">$1 ↗</a>'
+    )
+    formatted = formatted
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
       .replace(/\n/g, '<br/>')
+    return formatted
   }
 
   const firstName = userProfile?.displayName?.split(' ')[0] || 'there'
@@ -189,6 +196,7 @@ export default function ChatAgent() {
           <div className="text-xs text-blue-200 flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full">
             <Shield size={10} /> DPDP 2023
           </div>
+
         </div>
       </div>
 
@@ -272,23 +280,29 @@ export default function ChatAgent() {
         </div>
       )}
 
-      {/* Voice Call Card - Only show when chat has some messages */}
-{messages.length > 3 && (
-  <div className="px-4 pb-2 pt-1">
-    <div className="bg-gradient-to-r from-[#0B1F4B] to-[#1a3468] rounded-lg px-3 py-2 shadow-md flex items-center gap-3">
-      <div className="w-7 h-7 bg-[#FF6B00] rounded-lg flex items-center justify-center flex-shrink-0">
-        <Phone size={13} className="text-white" />
-      </div>
-      <div className="flex-1">
-        <p className="text-white font-semibold text-xs">Prefer talking?</p>
-        <p className="text-blue-200 text-[10px]">Switch to voice call with SaarthiAI</p>
-      </div>
-      <VoiceCallButton userProfile={userProfile} />
-    </div>
-  </div>
-)}
+      {/* Voice Panel — opens below navbar when phone icon clicked */}
+      {showVoicePanel && (
+        <div className="fixed top-16 right-4 z-50 w-72 animate-slideDown">
+          <div className="relative">
+            <button
+              onClick={() => setShowVoicePanel(false)}
+              className="absolute -top-2 -right-2 w-6 h-6 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center text-gray-600 text-xs z-10"
+            >✕</button>
+            <VoiceCallButton userProfile={userProfile} />
+          </div>
+        </div>
+      )}
       {/* Input Area */}
       <div className="bg-white border-t-2 border-gray-200 px-4 py-4 shadow-2xl">
+        {/* Call Me button row */}
+        <div className="flex justify-end mb-2">
+          <button
+            onClick={() => setShowVoicePanel(v => !v)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${showVoicePanel ? 'bg-[#FF6B00] text-white border-[#FF6B00]' : 'bg-white text-[#0B1F4B] border-[#0B1F4B] hover:bg-[#FF6B00] hover:text-white hover:border-[#FF6B00]'}`}
+          >
+            <Phone size={13} /> Call Me
+          </button>
+        </div>
         <div className="flex gap-2 items-end">
           <div className="flex-1 bg-gray-50 border-2 border-gray-200 rounded-2xl px-4 py-3 flex items-center gap-2 focus-within:border-[#FF6B00] transition-all">
             <input

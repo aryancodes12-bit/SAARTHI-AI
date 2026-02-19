@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
-
+import Support from './pages/Support'
 // Pages
 import Landing from './pages/Landing'
 import Login from './pages/Login'
@@ -15,7 +15,7 @@ import AdminPanel from './pages/AdminPanel'
 // Components
 import ConsentModal from './components/ConsentModal'
 
-function ProtectedRoute({ children, adminOnly, agentOnly }) {
+function ProtectedRoute({ children, adminOnly, agentOnly, skipOnboardingCheck = false }) {
   const { user, userProfile, loading, isAdmin, isAgent } = useAuth()
 
   if (loading) return (
@@ -29,12 +29,17 @@ function ProtectedRoute({ children, adminOnly, agentOnly }) {
 
   if (!user) return <Navigate to="/login" replace />
 
-  // Wait for profile to load before checking roles
-  if ((adminOnly || agentOnly) && !userProfile) return (
+  // Wait for profile to load
+  if (!userProfile) return (
     <div className="min-h-screen bg-[#0B1F4B] flex items-center justify-center">
       <div className="w-12 h-12 border-4 border-[#FF6B00] border-t-transparent rounded-full animate-spin mx-auto" />
     </div>
   )
+
+  // Force new users to complete onboarding first
+  if (!skipOnboardingCheck && !userProfile.onboardingComplete && userProfile.role === 'customer') {
+    return <Navigate to="/onboarding" replace />
+  }
 
   if (adminOnly && !isAdmin) return <Navigate to="/dashboard" replace />
   if (agentOnly && !isAgent) return <Navigate to="/dashboard" replace />
@@ -57,7 +62,7 @@ export default function App() {
 
         {/* Protected — Customer */}
         <Route path="/onboarding" element={
-          <ProtectedRoute><Onboarding /></ProtectedRoute>
+          <ProtectedRoute skipOnboardingCheck><Onboarding /></ProtectedRoute>
         } />
         <Route path="/dashboard" element={
           <ProtectedRoute><CustomerDashboard /></ProtectedRoute>
@@ -78,7 +83,7 @@ export default function App() {
         <Route path="/admin" element={
           <ProtectedRoute adminOnly><AdminPanel /></ProtectedRoute>
         } />
-
+<Route path="/support" element={<Support />} />
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

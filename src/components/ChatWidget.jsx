@@ -1,5 +1,3 @@
-
-
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Send, Loader, Shield, AlertTriangle, MessageCircle, X, Sparkles, Phone } from 'lucide-react'
@@ -148,10 +146,17 @@ export default function ChatWidget() {
     }
 
     const formatMessage = (text) => {
-        return text
+        // First convert markdown links [text](url) → clickable anchor tags
+        let formatted = text.replace(
+            /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+            '<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#FF6B00;text-decoration:underline;font-weight:600;cursor:pointer;">$1 ↗</a>'
+        )
+        // Then handle bold, italic, newlines
+        formatted = formatted
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
             .replace(/\n/g, '<br/>')
+        return formatted
     }
 
     return (
@@ -271,13 +276,17 @@ export default function ChatWidget() {
                                 <div className="w-7 h-7 bg-[#FF6B00] rounded-lg flex items-center justify-center flex-shrink-0">
                                     <Phone size={13} className="text-white" />
                                 </div>
-                                <div className="flex-1">
+                                <button
+                                    className="flex-1 text-left"
+                                    onClick={() => { setIsOpen(false); navigate('/chat') }}
+                                >
                                     <p className="text-white font-semibold text-xs">Prefer talking?</p>
                                     <p className="text-blue-200 text-[10px]">Switch to voice call with SaarthiAI</p>
-                                </div>
+                                </button>
                                 <button
                                     onClick={() => setShowVoiceCard(false)}
                                     className="text-white/40 hover:text-white/80 transition"
+                                    aria-label="Dismiss"
                                 >
                                     <X size={14} />
                                 </button>

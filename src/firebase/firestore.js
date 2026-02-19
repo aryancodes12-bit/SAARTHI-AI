@@ -47,6 +47,11 @@ export const revokeConsent = async (uid) => {
 
 // ─── LIFE EVENTS ──────────────────────────────────────────────────
 export const addLifeEvent = async (uid, event) => {
+  // Check for duplicates before adding — same event type should not be added twice
+  const snap = await getDoc(doc(db, 'users', uid))
+  const existing = snap.exists() ? (snap.data().lifeEvents || []) : []
+  const alreadyExists = existing.some(e => e.type === event.type)
+  if (alreadyExists) return // Skip duplicate
   await updateDoc(doc(db, 'users', uid), {
     lifeEvents: arrayUnion({ ...event, detectedAt: new Date().toISOString() }),
   })

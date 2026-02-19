@@ -33,7 +33,7 @@ export default function Navbar() {
               Dashboard
             </button>
           )}
-          <button className="hover:text-[#FF6B00] font-medium">Support</button>
+          <button onClick={() => navigate('/support')} className="hover:text-[#FF6B00] font-medium">Support</button>
         </div>
 
         {/* Right */}
@@ -67,7 +67,7 @@ export default function Navbar() {
         <div className="md:hidden border-t border-gray-100 bg-white px-6 py-4 space-y-3">
           <button className="block w-full text-left text-gray-700 py-2 hover:text-[#FF6B00] text-sm font-medium">Insurance Products</button>
           {user && <button onClick={() => { navigate('/dashboard'); setMobileOpen(false) }} className="block w-full text-left text-gray-700 py-2 hover:text-[#FF6B00] text-sm font-medium">Dashboard</button>}
-          <button className="block w-full text-left text-gray-700 py-2 hover:text-[#FF6B00] text-sm font-medium">Support</button>
+          <button onClick={() => { navigate('/support'); setMobileOpen(false) }} className="block w-full text-left text-gray-700 py-2 hover:text-[#FF6B00] text-sm font-medium">Support</button>
           <button onClick={() => navigate('/login')} className="w-full bg-[#FF6B00] text-white py-2.5 rounded-lg text-sm font-bold">
             {user ? 'Go to Dashboard' : 'Get Started'}
           </button>

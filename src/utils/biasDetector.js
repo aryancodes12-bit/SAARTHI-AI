@@ -34,26 +34,6 @@ const FAIRNESS_RULES = [
 ]
 
 /**
- * Check AI prompt for potential bias
- * @param {string} prompt
- * @returns {{ safe: boolean, issues: string[] }}
- */
-export function checkPromptBias(prompt) {
-  const issues = []
-
-  PROTECTED_ATTRIBUTES.forEach(attr => {
-    if (prompt.toLowerCase().includes(attr)) {
-      issues.push(`Protected attribute detected in prompt: "${attr}"`)
-    }
-  })
-
-  return {
-    safe: issues.length === 0,
-    issues,
-  }
-}
-
-/**
  * Check AI response for bias
  * @param {string} response
  * @returns {{ fair: boolean, violations: string[], cleaned: string }}

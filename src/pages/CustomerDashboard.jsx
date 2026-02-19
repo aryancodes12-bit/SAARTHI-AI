@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Shield, MessageCircle, Phone, Bell, Settings, Star,
-  ChevronRight, Zap, TrendingUp, LogOut, RefreshCw
+  ChevronRight, Zap, TrendingUp, LogOut, RefreshCw, HelpCircle
 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useBehaviorTracker } from '../hooks/useBehaviorTracker'
@@ -42,7 +42,7 @@ const PRODUCTS = [
   { name: 'Fleet Insurance', type: 'Motor', url: 'https://www.icicilombard.com/business-insurance/fleet', icon: '🚗', urgency: 'low', reason: 'For businesses with multiple vehicles.' },
 
   // Child
-  { name: 'BrightFuture Child ULIP', type: 'Child', url: 'https://lifeinsurance.pnbmetlife.com/child-insurance-plans/youngstar-unit-linked-plan', icon: '🎓', urgency: 'high', reason: 'Market-linked plan for child’s education.' },
+  { name: 'BrightFuture Child ULIP', type: 'Child', url: 'https://lifeinsurance.pnbmetlife.com/child-insurance-plans/youngstar-unit-linked-plan', icon: '🎓', urgency: 'high', reason: "Market-linked plan for child's education." },
   { name: 'EduGrow Child ULIP Plus', type: 'Child', url: 'https://www.tataaia.com/life-insurance-plans/child-plans/future-child-plan.html', icon: '🎓', urgency: 'high', reason: 'Build corpus for higher studies.' },
 
   // Retirement
@@ -54,7 +54,6 @@ const PRODUCTS = [
   { name: 'NPS Turbo', type: 'Retire', url: 'https://www.hdfclife.com/retirement-plans/nps-pension-plan', icon: '🌅', urgency: 'low', reason: 'National Pension Scheme with tax benefits.' },
 ]
 
-// Quick Links now open specific product URLs (first product from each category)
 const QUICK_LINKS = [
   { icon: '🛡️', label: 'Term Life', color: 'bg-blue-50 text-blue-700', url: 'https://www.canarahsbclife.com/term-insurance/30-year-term-insurance-plan' },
   { icon: '❤️', label: 'Health', color: 'bg-red-50 text-red-700', url: 'https://www.religarehealthinsurance.com/health-insurance-plans/health-advantedge' },
@@ -67,7 +66,7 @@ const QUICK_LINKS = [
 export default function CustomerDashboard() {
   const navigate = useNavigate()
   const { user, userProfile } = useAuth()
-  const { trackPageView, trackProductView, getBehaviorData } = useBehaviorTracker()
+  const { trackPageView, trackProductView, trackTimeOnPage, getBehaviorData } = useBehaviorTracker()
 
   const [lifeEvents, setLifeEvents] = useState([])
   const [recommendations, setRecommendations] = useState([])
@@ -75,10 +74,14 @@ export default function CustomerDashboard() {
   const [loading, setLoading] = useState(true)
   const [intentScore, setIntentScore] = useState(0)
   const [refreshSeed, setRefreshSeed] = useState(0)
+  const [showNotif, setShowNotif] = useState(false)
 
   useEffect(() => {
     trackPageView('/dashboard')
     loadDashboardData()
+    return () => {
+      trackTimeOnPage('/dashboard')
+    }
   }, [user])
 
   useEffect(() => {
@@ -94,9 +97,9 @@ export default function CustomerDashboard() {
       const [events] = await Promise.all([
         getUserLifeEvents(user.uid),
       ])
-      setLifeEvents(events)
+      const uniqueEvents = events.filter((e, idx, arr) => arr.findIndex(x => x.type === e.type) === idx)
+      setLifeEvents(uniqueEvents)
 
-      // Score products based on life events and behavior
       let scored = PRODUCTS.map(p => {
         let score = 0
         if (events.some(e => e.label.toLowerCase().includes(p.type.toLowerCase()))) {
@@ -106,7 +109,7 @@ export default function CustomerDashboard() {
         if (behavior?.productInterests?.[p.type]) {
           score += 15
         }
-        score += Math.random() * 30 // some randomness for variety
+        score += Math.random() * 30
         return { ...p, score }
       })
       scored.sort((a, b) => b.score - a.score)
@@ -130,21 +133,17 @@ export default function CustomerDashboard() {
 
   const updateDisplayedRecs = () => {
     if (recommendations.length === 0) return
-
     if (displayedRecs.length === 0) {
       setDisplayedRecs(recommendations.slice(0, 3))
       return
     }
-
     const currentIds = displayedRecs.map(r => r.name)
     const available = recommendations.filter(r => !currentIds.includes(r.name))
-
     if (available.length === 0) {
       const shuffled = [...displayedRecs].sort(() => Math.random() - 0.5)
       setDisplayedRecs(shuffled)
       return
     }
-
     const replaceIndex = Math.floor(Math.random() * 3)
     const newProduct = available[Math.floor(Math.random() * available.length)]
     const newDisplay = [...displayedRecs]
@@ -159,7 +158,7 @@ export default function CustomerDashboard() {
 
   const handleQuickLinkClick = (link) => {
     trackProductView(link.label, link.label)
-    window.open(link.url, '_blank') // opens the product URL in new tab
+    window.open(link.url, '_blank')
   }
 
   const handleRefreshRecommendations = () => {
@@ -182,7 +181,85 @@ export default function CustomerDashboard() {
           <span className="text-white font-bold text-lg">Saarthi<span className="text-[#FF6B00]">AI</span></span>
         </div>
         <div className="flex items-center gap-3">
-          <button className="text-white/70 hover:text-white transition-transform hover:scale-110"><Bell size={20} /></button>
+          {/* Notification Bell */}
+          <div className="relative">
+            <button
+              onClick={() => setShowNotif(v => !v)}
+              className="relative text-white/70 hover:text-white transition-transform hover:scale-110"
+            >
+              <Bell size={20} />
+              {(lifeEvents.length > 0 || displayedRecs.length > 0) && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#FF6B00] rounded-full text-white text-[9px] font-bold flex items-center justify-center">
+                  {lifeEvents.length + displayedRecs.length > 9 ? '9+' : lifeEvents.length + displayedRecs.length}
+                </span>
+              )}
+            </button>
+
+            {/* Dropdown */}
+            {showNotif && (
+              <div className="absolute right-0 top-9 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-slideDown">
+                <div className="bg-[#0B1F4B] px-4 py-3 flex items-center justify-between">
+                  <p className="text-white font-bold text-sm">Notifications</p>
+                  <button onClick={() => setShowNotif(false)} className="text-white/50 hover:text-white text-xs">✕</button>
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {lifeEvents.length > 0 && (
+                    <div className="px-4 pt-3 pb-1">
+                      <p className="text-xs font-semibold text-gray-400 uppercase mb-2">🎯 Detected Life Events</p>
+                      {lifeEvents.map((e, i) => (
+                        <div key={i} className="flex items-center gap-2 py-2 border-b border-gray-50 last:border-0">
+                          <span className="text-base">{e.label?.split(' ')[0]}</span>
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">{e.label}</p>
+                            <p className="text-xs text-gray-400">{e.detectedAt ? new Date(e.detectedAt).toLocaleDateString('en-IN') : 'Recently detected'}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {displayedRecs.length > 0 && (
+                    <div className="px-4 pt-3 pb-3">
+                      <p className="text-xs font-semibold text-gray-400 uppercase mb-2">⚡ AI Recommendations</p>
+                      {displayedRecs.map((r, i) => (
+                        <div key={i}
+                          className="flex items-center gap-2 py-2 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 rounded-lg px-1 transition"
+                          onClick={() => { window.open(r.url, '_blank'); setShowNotif(false) }}
+                        >
+                          <span className="text-base">{r.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-800 truncate">{r.name}</p>
+                            <p className="text-xs text-gray-400">{r.type}</p>
+                          </div>
+                          <ChevronRight size={14} className="text-gray-300 flex-shrink-0" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {lifeEvents.length === 0 && displayedRecs.length === 0 && (
+                    <div className="px-4 py-8 text-center text-gray-400 text-sm">
+                      No notifications yet
+                    </div>
+                  )}
+                </div>
+                <div className="border-t border-gray-100 px-4 py-2">
+                  <button onClick={() => { navigate('/chat'); setShowNotif(false) }}
+                    className="w-full text-xs text-[#FF6B00] font-semibold hover:underline text-center py-1">
+                    Chat with AI for personalized advice →
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ✅ Support Button */}
+          <button
+            onClick={() => navigate('/support')}
+            className="text-white/50 hover:text-white transition-transform hover:scale-110"
+            title="Support"
+          >
+            <HelpCircle size={18} />
+          </button>
+
           <button onClick={handleSignOut} className="text-white/50 hover:text-white transition-transform hover:scale-110"><LogOut size={18} /></button>
           <div className="w-8 h-8 bg-[#FF6B00] rounded-full flex items-center justify-center text-white font-bold text-sm animate-bounce [animation-duration:2s]">{firstName[0]?.toUpperCase()}</div>
         </div>
@@ -206,7 +283,6 @@ export default function CustomerDashboard() {
             </div>
           </div>
 
-          {/* Life Events */}
           {lifeEvents.length > 0 && (
             <div className="mt-4 flex gap-2 flex-wrap animate-slideUp">
               <p className="text-xs text-blue-200 w-full">🎯 Detected life events:</p>
@@ -216,16 +292,14 @@ export default function CustomerDashboard() {
             </div>
           )}
 
-          {/* CTA Row */}
-    {/* CTA Row */}
           <div className="flex gap-3 mt-5">
             <button onClick={() => navigate('/chat')} className="w-full bg-[#FF6B00] text-white py-2.5 rounded-xl text-sm font-bold hover:bg-orange-600 transition-all hover:scale-105 hover:shadow-lg flex items-center justify-center gap-2">
               <MessageCircle size={16} /> Chat with AI
             </button>
           </div>
-        </div> {/* ← YEH ADD KARO — Welcome Card ka closing div */}
+        </div>
 
-        {/* Quick Links - each opens a specific product URL */}
+        {/* Quick Links */}
         <div>
           <h2 className="text-sm font-semibold text-gray-600 mb-3">Quick Browse</h2>
           <div className="grid grid-cols-6 gap-2">
@@ -316,8 +390,6 @@ export default function CustomerDashboard() {
             </div>
           ))}
         </div>
-
-        {/* DPDP badge removed as requested */}
       </div>
       <ChatWidget />
     </div>

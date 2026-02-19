@@ -18,6 +18,7 @@ export default function Onboarding() {
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [phoneError, setPhoneError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
 
   const [profile, setProfile] = useState({
     ageGroup: '',
@@ -36,15 +37,19 @@ export default function Onboarding() {
   })
 
   const handleProfileSubmit = async () => {
-    if (!profile.mobileNumber) {
-      setPhoneError('Mobile number is required')
-      return
-    }
-    if (!profile.mobileNumber.match(/^[6-9]\d{9}$/)) {
-      setPhoneError('Enter valid 10-digit Indian mobile number')
-      return
-    }
-    setPhoneError('')
+    // Validate all required fields
+    const errors = {}
+    if (!profile.ageGroup) errors.ageGroup = 'Required'
+    if (!profile.occupation) errors.occupation = 'Required'
+    if (!profile.dependents) errors.dependents = 'Required'
+    if (!profile.mobileNumber) errors.mobileNumber = 'Mobile number is required'
+    else if (!profile.mobileNumber.match(/^[6-9]\d{9}$/)) errors.mobileNumber = 'Enter valid 10-digit Indian mobile number'
+
+    setFieldErrors(errors)
+    if (errors.mobileNumber) setPhoneError(errors.mobileNumber)
+    else setPhoneError('')
+
+    if (Object.keys(errors).length > 0) return
     setLoading(true)
     await updateUserProfile(user.uid, {
       ...profile,
@@ -105,7 +110,7 @@ export default function Onboarding() {
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Age Group</label>
                   <select value={profile.ageGroup} onChange={e => setProfile(p => ({ ...p, ageGroup: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0B1F4B]">
+                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0B1F4B] ${fieldErrors.ageGroup ? "border-red-400 bg-red-50" : "border-gray-200"}`}>
                     <option value="">Select</option>
                     {['18-25', '26-35', '36-45', '46-55', '55+'].map(a => <option key={a} value={a}>{a} years</option>)}
                   </select>
@@ -113,7 +118,7 @@ export default function Onboarding() {
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Occupation</label>
                   <select value={profile.occupation} onChange={e => setProfile(p => ({ ...p, occupation: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0B1F4B]">
+                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0B1F4B] ${fieldErrors.occupation ? "border-red-400 bg-red-50" : "border-gray-200"}`}>
                     <option value="">Select</option>
                     {['Salaried', 'Self-Employed', 'Business Owner', 'Freelancer', 'Student', 'Retired'].map(o => <option key={o} value={o}>{o}</option>)}
                   </select>
@@ -121,7 +126,7 @@ export default function Onboarding() {
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Dependents</label>
                   <select value={profile.dependents} onChange={e => setProfile(p => ({ ...p, dependents: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0B1F4B]">
+                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0B1F4B] ${fieldErrors.dependents ? "border-red-400 bg-red-50" : "border-gray-200"}`}>
                     <option value="">Select</option>
                     {['None', '1', '2', '3', '4+'].map(d => <option key={d} value={d}>{d}</option>)}
                   </select>

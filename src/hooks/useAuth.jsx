@@ -18,8 +18,6 @@ export function AuthProvider({ children }) {
       if (firebaseUser) {
         setUser(firebaseUser)
         const profile = await getUserProfile(firebaseUser.uid)
-        console.log('Profile loaded:', profile)
-        console.log('Role:', profile?.role)
         setUserProfile(profile)
         if (profile?.consentGiven) {
           Cookies.set('saarthi_consent', 'true', { expires: 365 })
