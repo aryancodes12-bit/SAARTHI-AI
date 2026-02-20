@@ -24,28 +24,173 @@ import { getAIRecommendations } from "../ai/recommendationEngine";
 import VoiceCallButton from "../components/VoiceCallButton";
 
 // ----- CONFIGURATION -----
-const TEXTBEE_API_KEY = "4ecd90ed-784c-4c42-90bc-f289e92f057d";
-const TEXTBEE_DEVICE_ID = "6997280af8dad099dc95e982";
+const TEXTBEE_API_KEY = "92bb5f37-b10b-47ad-a7e3-110caf803f4a";
+const TEXTBEE_DEVICE_ID = "6997f993deb3cd9fe785aa5e";
 const TEXTMEBOT_API_KEY = "GCa1w4roma8B";
 const ONESIGNAL_APP_ID = "085dddb7-507c-40ef-9ffd-107f87fb2d65";
 
 // ----- WHATSAPP TEMPLATES -----
 const WHATSAPP_TEMPLATES = [
-  "Sarthi AI: 🚀 Welcome back! After conducting a detailed AI-driven analysis of your insurance portfolio, financial health score, and recent activity trends, we've identified a Term Life plan that strongly aligns with your protection needs and long-term financial goals. Life coverage is not just a policy — it is a financial safety net that ensures your family's stability in uncertain times. Choosing the right plan today can prevent major financial challenges tomorrow. We've simplified the process and curated a personalized recommendation just for you. Take a moment to review the insights and secure your future with confidence: https://saarthi-ai-mu.vercel.app/",
-  "Sarthi AI: ⚠️ Important Financial Update! Your Financial Health Score has been recalculated using our latest risk assessment model, portfolio tracking system, and coverage adequacy benchmarks. Our AI has identified areas where your protection strategy can be optimized to reduce potential long-term exposure. Based on this evaluation, we've generated 3 strategic recommendations tailored specifically to your financial behavior and risk profile. Reviewing these insights now could significantly strengthen your overall financial security. Access your personalized dashboard here: https://saarthi-ai-mu.vercel.app/",
-  "Sarthi AI: 🎉 Opportunity Alert! Based on your engagement history, policy structure, and profile evaluation, our system indicates that you may qualify for a premium discount or optimized pricing benefit on selected plans. Strategic adjustments at the right time can enhance your coverage while keeping your overall premium efficient. Instead of paying more later, take advantage of smart optimization today. Let our AI guide you through the most suitable option curated specifically for you. Explore your eligibility and recommendations here: https://saarthi-ai-mu.vercel.app/",
-  "Sarthi AI: ⏳ Protection Reminder — It has been some time since your family protection plans were reviewed against current economic and healthcare cost trends. With medical inflation rising steadily each year, even well-structured plans can become insufficient over time. A small coverage gap today can turn into a significant financial burden during emergencies. Our AI continuously monitors such risks and flags potential vulnerabilities before they become real problems. Take just a few minutes to reassess and strengthen your family's financial shield: https://saarthi-ai-mu.vercel.app/",
-  "Sarthi AI: 💡 Critical Coverage Insight — During our continuous monitoring process, we detected a potential gap in your current health insurance coverage when compared against projected high-cost hospitalization scenarios. In case of major treatment or extended medical care, this gap could result in unexpected out-of-pocket expenses. To prevent this financial exposure, we've generated a personalized Top-Up plan recommendation aligned with your risk profile, coverage limits, and financial health index. Strengthening your safety net today ensures stability and peace of mind tomorrow. Review your detailed analysis and recommended solution here: https://saarthi-ai-mu.vercel.app/",
-  "Sarthi AI: ⚡ Strategic Protection Enhancement Recommended — Healthcare costs are evolving rapidly, and maintaining adequate coverage requires proactive planning. Based on your policy structure, claims risk assessment, and financial behavior analytics, our AI recommends adding an optimized Top-Up layer to reinforce your protection strategy. This enhancement is designed to minimize financial shocks during high-value medical events while keeping your premium burden manageable. Taking action now ensures you remain financially resilient even in unexpected situations. Access your personalized recommendation and strengthen your coverage today: https://saarthi-ai-mu.vercel.app/",
-];
+  `🛡️ *Saarthi AI | Protection Intelligence Report*
+
+Dear Valued Member,
+
+Our AI engine has completed a full analysis of your financial protection profile. Based on your risk indicators and coverage benchmarks, we have identified a *Term Life Plan* that is strongly aligned with your long-term security goals.
+
+*Why this matters now:*
+• Your current coverage may have gaps that grow costlier over time
+• Term life premiums increase with age — locking in early saves significantly
+• Your family's financial continuity depends on acting before uncertainty strikes
+
+✅ *Your personalised plan is ready for review.*
+
+👉 Access your secure dashboard: https://saarthi-ai-mu.vercel.app/
+
+_Saarthi AI — Intelligent Protection, Personalised for You._`,
+
+  `📊 *Saarthi AI | Financial Health Alert*
+
+Hello,
+
+Your *Financial Protection Score* has been recalculated by our AI risk engine using updated market benchmarks and coverage adequacy models.
+
+*Key findings from your assessment:*
+• 3 optimisation opportunities identified in your current portfolio
+• Risk exposure detected in your long-term protection strategy
+• Personalised recommendations generated based on your profile
+
+Our AI has curated solutions designed specifically to close these gaps — without disrupting your current financial commitments.
+
+🔐 *Review your full report here:*
+👉 https://saarthi-ai-mu.vercel.app/
+
+_Saarthi AI — Your AI-Powered Insurance Advisor._`,
+
+  `🎯 *Saarthi AI | Exclusive Opportunity Detected*
+
+Dear Member,
+
+Based on a detailed evaluation of your engagement history and policy structure, our system has flagged a *limited pricing advantage* available on select protection plans curated for your profile.
+
+*What our AI found for you:*
+• Premium efficiency optimisation available on your coverage tier
+• Strategic plan adjustment could improve your protection by up to 40%
+• Window for this advantage is time-sensitive
+
+Don't let this opportunity pass — our AI has done the analysis. All you need to do is review.
+
+💼 *Explore your personalised offer:*
+👉 https://saarthi-ai-mu.vercel.app/
+
+_Saarthi AI — Smarter Decisions. Stronger Protection._`,
+
+  `⏳ *Saarthi AI | Coverage Review Reminder*
+
+Hello,
+
+It has been a while since your family protection plan was benchmarked against current healthcare inflation and economic risk indices.
+
+*Here's what has changed:*
+• Medical inflation in India is rising at 14% annually
+• Your existing coverage limits may no longer be sufficient
+• A single hospitalisation event can now cost ₹5–15 lakhs+
+
+Our AI has proactively assessed your exposure and prepared a *personalised coverage enhancement recommendation* — at no extra effort from your side.
+
+🔎 *View your updated protection analysis:*
+👉 https://saarthi-ai-mu.vercel.app/
+
+_Saarthi AI — Always Watching. Always Protecting._`,
+
+  `💡 *Saarthi AI | Critical Coverage Gap Detected*
+
+Dear Member,
+
+During our continuous AI monitoring cycle, our system flagged a *potential shortfall* in your health insurance coverage when stress-tested against high-cost hospitalisation scenarios.
+
+*Risk Summary:*
+• Current policy: May leave you exposed above ₹3–5 lakh threshold
+• Projected gap: Significant out-of-pocket liability in critical events
+• Recommended action: Top-Up plan to reinforce existing coverage
+
+We have already prepared a solution aligned with your risk profile and financial health index. It takes less than 2 minutes to review.
+
+🛡️ *Secure your gap analysis + recommendation:*
+👉 https://saarthi-ai-mu.vercel.app/
+
+_Saarthi AI — Precision Protection Intelligence._`,
+
+  `⚡ *Saarthi AI | Strategic Enhancement Recommended*
+
+Hello,
+
+Healthcare costs are evolving faster than most standard policies account for. Our AI has analysed your current protection structure and identified a *high-priority enhancement opportunity.*
+
+*AI Recommendation Summary:*
+• Add a Top-Up layer to absorb high-value claim scenarios
+• Maintain premium efficiency while maximising coverage ceiling
+• Protect against financial shock during extended medical events
+
+This is not a generic suggestion — it is a personalised, data-backed recommendation built from your unique financial behaviour and risk profile.
+
+📈 *Act on your AI recommendation today:*
+👉 https://saarthi-ai-mu.vercel.app/
+
+_Saarthi AI — Because Generic Advice Is Never Enough._`,
+]
 
 // ----- SMS TEMPLATES -----
 const SMS_TEMPLATES = [
-  `Sarthi AI:\n\nWe've analyzed your insurance portfolio and identified a potential gap in your current health coverage. With rising medical costs, your existing policy may not fully protect you during high-expense hospitalizations.\n\nBased on your financial profile and risk score, we've generated a personalized Top-Up plan designed to enhance your protection without significantly increasing your premium.\n\nExplore your tailored recommendation now:\n👉 https://saarthi-ai-mu.vercel.app/\n\nStay ahead. Stay protected.`,
-  `Sarthi AI:\n\nSmart Coverage Update 💡\n\nOur AI has detected that your current health insurance may leave you exposed during major medical emergencies. Instead of waiting for a claim situation, take proactive action today.\n\nWe've curated a customized Top-Up solution aligned with your risk profile and financial health score.\n\nSecure stronger coverage now:\n👉 https://saarthi-ai-mu.vercel.app/\n\nProtection today prevents financial stress tomorrow.`,
-  `Sarthi AI:\n\nImportant Protection Alert ⚠️\n\nAfter continuously monitoring your coverage and healthcare cost trends, our system identified a possible shortfall in your health insurance limits.\n\nTo help you avoid unexpected out-of-pocket expenses, we've prepared a personalized Top-Up recommendation tailored specifically for you.\n\nReview and upgrade your protection here:\n👉 https://saarthi-ai-mu.vercel.app/\n\nTakes less than 2 minutes. Your future self will thank you.`,
-  `Sarthi AI:\n\nPersonalized Coverage Insight 💡\n\nBased on your recent activity and insurance profile, our AI recommends strengthening your health coverage with a smart Top-Up plan. This enhancement can significantly reduce financial exposure during high-value claims.\n\nView your custom recommendation and act instantly:\n👉 https://saarthi-ai-mu.vercel.app/\n\nSmarter decisions. Stronger protection.`,
-];
+  `Saarthi AI | Protection Alert
+
+Hi, our AI has detected a coverage gap in your health insurance profile.
+
+With medical costs rising 14% annually, your current policy may leave you exposed during high-value hospitalisations.
+
+We've prepared a personalised Top-Up recommendation based on your risk score.
+
+Review it here:
+https://saarthi-ai-mu.vercel.app/
+
+Saarthi AI — Intelligent Protection.`,
+
+  `Saarthi AI | Smart Coverage Update
+
+Your Financial Health Score was recalculated today.
+
+Our AI identified 3 optimisation opportunities in your current protection portfolio — and has already prepared solutions tailored to your profile.
+
+Don't wait for a claim to find the gaps.
+
+View your report:
+https://saarthi-ai-mu.vercel.app/
+
+Saarthi AI — Always a Step Ahead.`,
+
+  `Saarthi AI | Action Required
+
+A potential shortfall has been flagged in your health insurance coverage limits.
+
+Based on current hospitalisation cost trends, your existing policy may not fully protect you in a critical medical event.
+
+Your personalised upgrade recommendation is ready.
+
+Access it now:
+https://saarthi-ai-mu.vercel.app/
+
+Takes under 2 mins. Your future self will thank you.`,
+
+  `Saarthi AI | Exclusive Insight Ready
+
+Our AI has prepared a personalised coverage enhancement plan based on your recent activity and insurance profile.
+
+A smart Top-Up addition could reduce your financial exposure significantly — without a major change in premium.
+
+See your custom recommendation:
+https://saarthi-ai-mu.vercel.app/
+
+Saarthi AI — Smarter Decisions. Stronger Protection.`,
+]
 
 // ----- REAL PRODUCT DATA (from your table) -----
 const PRODUCTS = [
