@@ -161,83 +161,74 @@ export default function Landing() {
       </nav>
 
       {/* Hero Section */}
-{/* Hero Section */}
-<section className="bg-white py-12 border-b border-gray-100">
-  <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-    
-    {/* LEFT COLUMN */}
-    <div>
-      <p className="text-gray-500 text-sm mb-2">AI-Powered Insurance Marketing</p>
-      <h1 className="text-4xl font-bold text-gray-900 leading-tight mb-4">
-        Let's find you<br />
-        the <span className="text-[#0B1F4B]">Right Insurance</span>
-      </h1>
-      <p className="text-gray-600 mb-2 flex items-center gap-2 text-sm"><CheckCircle size={16} className="text-green-500" /> AI detects your life events automatically</p>
-      <p className="text-gray-600 mb-2 flex items-center gap-2 text-sm"><CheckCircle size={16} className="text-green-500" /> Personalized recommendations, no spam</p>
-      <p className="text-gray-600 mb-6 flex items-center gap-2 text-sm"><CheckCircle size={16} className="text-green-500" /> DPDP 2023 compliant & Responsible AI</p>
-      <div className="flex gap-3">
-        <button
-          onClick={() => window.open('https://youtu.be/VBPUgFXMcxY?si=9o_VuWnCwf1ZpdPX', '_blank')}
-          className="bg-[#FF6B00] text-white px-8 py-3 rounded font-bold hover:bg-orange-600 flex items-center gap-2"
-        >
-          See Demo Video <ArrowRight size={16} />
-        </button>
-        <button
-          onClick={() => navigate('/login')}
-          className="border-2 border-[#0B1F4B] text-[#0B1F4B] px-8 py-3 rounded font-bold hover:bg-gray-50"
-        >
-          Get Started
-        </button>
-      </div>
-    </div>
+      <section className="bg-white py-12 border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <p className="text-gray-500 text-sm mb-2">AI-Powered Insurance Marketing</p>
+            <h1 className="text-4xl font-bold text-gray-900 leading-tight mb-4">
+              Let's find you<br />
+              the <span className="text-[#0B1F4B]">Right Insurance</span>
+            </h1>
+            <p className="text-gray-600 mb-2 flex items-center gap-2 text-sm"><CheckCircle size={16} className="text-green-500" /> AI detects your life events automatically</p>
+            <p className="text-gray-600 mb-2 flex items-center gap-2 text-sm"><CheckCircle size={16} className="text-green-500" /> Personalized recommendations, no spam</p>
+            <p className="text-gray-600 mb-6 flex items-center gap-2 text-sm"><CheckCircle size={16} className="text-green-500" /> DPDP 2023 compliant & Responsible AI</p>
+            <div className="flex gap-3">
+              <button onClick={() => window.open('https://youtu.be/VBPUgFXMcxY?si=9o_VuWnCwf1ZpdPX', '_blank')}
+               className="bg-[#FF6B00] text-white px-8 py-3 rounded font-bold hover:bg-orange-600 flex items-center gap-2">
+                See Demo <ArrowRight size={16} />
+              </button>
+              <button onClick={() => navigate('/login')} className="border-2 border-[#0B1F4B] text-[#0B1F4B] px-8 py-3 rounded font-bold hover:bg-gray-50">
+                Get Started
+              </button>
+            </div>
+          </div>
 
-    {/* RIGHT COLUMN - WhatsApp mockup */}
-    <div className="flex justify-center lg:justify-end">
-      <div className="group relative bg-white rounded-2xl shadow-xl border border-gray-200 w-80 overflow-hidden">
-        <div className="transition-all duration-300 group-hover:blur-sm">
-          <div className="bg-[#0B1F4B] px-4 py-3 flex items-center gap-3">
-            <div className="w-9 h-9 bg-[#FF6B00] rounded-full flex items-center justify-center text-white font-bold text-sm">S</div>
-            <div>
-              <p className="text-white font-semibold text-sm">SaarthiAI Assistant</p>
-              <div className="flex items-center gap-1">
-                <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
-                <p className="text-green-300 text-xs">Live — AI Agent</p>
+          {/* WhatsApp mockup */}
+          <div className="flex justify-center lg:justify-end">
+            <div className="group relative bg-white rounded-2xl shadow-xl border border-gray-200 w-80 overflow-hidden">
+              <div className="transition-all duration-300 group-hover:blur-sm">
+                <div className="bg-[#0B1F4B] px-4 py-3 flex items-center gap-3">
+                  <div className="w-9 h-9 bg-[#FF6B00] rounded-full flex items-center justify-center text-white font-bold text-sm">S</div>
+                  <div>
+                    <p className="text-white font-semibold text-sm">SaarthiAI Assistant</p>
+                    <div className="flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+                      <p className="text-green-300 text-xs">Live — AI Agent</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-gray-50 p-4 space-y-3 min-h-48">
+                  <div className="bg-white rounded-xl rounded-tl-none p-3 shadow-sm border border-gray-100">
+                    <p className="text-gray-800 text-sm font-medium">Hi Priya! 🌟 Congratulations on your marriage!</p>
+                    <p className="text-gray-500 text-xs mt-1">Family Health Coverage from ₹500/month would be perfect for your new journey together.</p>
+                    <p className="text-gray-400 text-xs mt-2 text-right">8:00 PM ✓✓</p>
+                  </div>
+                  <div className="flex justify-end">
+                    <div className="bg-[#0B1F4B] text-white rounded-xl rounded-tr-none p-2.5 text-sm">Yes, tell me more!</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button className="bg-[#FF6B00] text-white text-xs px-4 py-2 rounded-full font-medium">Yes, please!</button>
+                    <button className="border border-gray-300 text-gray-500 text-xs px-4 py-2 rounded-full">Not now</button>
+                  </div>
+                </div>
+                <div className="bg-blue-50 px-4 py-2 border-t border-blue-100 flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-[#FF6B00] rounded-full"></div>
+                  <p className="text-blue-700 text-xs">Auto-triggered | Marriage Detected | 8:00 PM</p>
+                </div>
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-[#0B1F4B]/80 backdrop-blur-sm rounded-2xl">
+                <div className="text-center p-4">
+                  <Lock size={40} className="mx-auto text-[#FF6B00] mb-3" />
+                  <p className="text-white font-semibold mb-3">Sign in to unlock personalized conversations</p>
+                  <button onClick={() => navigate('/login')} className="bg-[#FF6B00] text-white px-6 py-2 rounded-full font-bold text-sm hover:bg-orange-600 transition shadow-lg">
+                    Sign In / Sign Up
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-          <div className="bg-gray-50 p-4 space-y-3 min-h-48">
-            <div className="bg-white rounded-xl rounded-tl-none p-3 shadow-sm border border-gray-100">
-              <p className="text-gray-800 text-sm font-medium">Hi Priya! 🌟 Congratulations on your marriage!</p>
-              <p className="text-gray-500 text-xs mt-1">Family Health Coverage from ₹500/month would be perfect for your new journey together.</p>
-              <p className="text-gray-400 text-xs mt-2 text-right">8:00 PM ✓✓</p>
-            </div>
-            <div className="flex justify-end">
-              <div className="bg-[#0B1F4B] text-white rounded-xl rounded-tr-none p-2.5 text-sm">Yes, tell me more!</div>
-            </div>
-            <div className="flex gap-2">
-              <button className="bg-[#FF6B00] text-white text-xs px-4 py-2 rounded-full font-medium">Yes, please!</button>
-              <button className="border border-gray-300 text-gray-500 text-xs px-4 py-2 rounded-full">Not now</button>
-            </div>
-          </div>
-          <div className="bg-blue-50 px-4 py-2 border-t border-blue-100 flex items-center gap-2">
-            <div className="w-1.5 h-1.5 bg-[#FF6B00] rounded-full"></div>
-            <p className="text-blue-700 text-xs">Auto-triggered | Marriage Detected | 8:00 PM</p>
-          </div>
         </div>
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-[#0B1F4B]/80 backdrop-blur-sm rounded-2xl">
-          <div className="text-center p-4">
-            <Lock size={40} className="mx-auto text-[#FF6B00] mb-3" />
-            <p className="text-white font-semibold mb-3">Sign in to unlock personalized conversations</p>
-            <button onClick={() => navigate('/login')} className="bg-[#FF6B00] text-white px-6 py-2 rounded-full font-bold text-sm hover:bg-orange-600 transition shadow-lg">
-              Sign In / Sign Up
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</section>
+      </section>
 
       {/* AI-Matched Insurance Plans */}
       <section className="py-10 bg-white border-b border-gray-100">
