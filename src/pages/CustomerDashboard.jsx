@@ -361,7 +361,7 @@ export default function CustomerDashboard() {
       </nav>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-        {/* Welcome Card */}
+        {/* Welcome Card — Intent Score removed */}
         <div className="bg-gradient-to-r from-[#0B1F4B] to-[#1a3468] rounded-2xl p-6 text-white shadow-xl animate-fadeIn">
           <div className="flex justify-between items-start">
             <div>
@@ -372,13 +372,6 @@ export default function CustomerDashboard() {
               <div className="flex items-center gap-2 text-blue-200 text-xs mt-1">
                 <Phone size={12} />
                 <span>{displayPhone}</span>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="bg-white/10 rounded-xl px-4 py-2 backdrop-blur-sm">
-                <p className="text-xs text-blue-200">Intent Score</p>
-                <p className="text-2xl font-bold text-[#FF6B00]">{intentScore}</p>
-                <p className="text-xs text-blue-200">/ 100</p>
               </div>
             </div>
           </div>

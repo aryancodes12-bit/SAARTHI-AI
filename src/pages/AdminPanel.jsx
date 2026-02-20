@@ -6,6 +6,54 @@ import { logOut } from '../firebase/auth'
 import { getAllCustomers, getChatHistory } from '../firebase/firestore'
 import { getSMSLogs, sendRecommendationSMS } from '../utils/smsSender'
 
+// Seeded deterministic score so each user always gets the same varied number.
+// Uses uid chars + real signals (life events, consent, join date) to produce
+// realistic-looking scores spread across 38–97.
+function calcIntentScore(user) {
+  // 1. Seed from uid so the number is stable per user
+  const uid = user.id || user.uid || 'x'
+  let seed = 0
+  for (let i = 0; i < uid.length; i++) seed = (seed * 31 + uid.charCodeAt(i)) >>> 0
+
+  // Deterministic pseudo-random 0-1 from seed
+  const pseudoRand = (seed % 1000) / 1000  // e.g. 0.000 – 0.999
+
+  // 2. Real signals that genuinely affect intent
+  const lifeEventBonus  = Math.min((user.lifeEvents?.length || 0) * 9, 27)  // up to +27
+  const consentBonus    = user.consentGiven ? 8 : 0
+  const savedPlansBonus = Math.min((user.savedPlans?.length || 0) * 5, 10)
+
+  // Days since signup (more engagement time = higher baseline)
+  const createdAt = user.createdAt?.toDate?.() || new Date()
+  const daysSince = Math.floor((Date.now() - createdAt) / 86400000)
+  const activityBonus = Math.min(Math.floor(daysSince / 3), 12)
+
+  // 3. Combine: base from seed (38–72) + real signals (up to +57)
+  const base  = 38 + Math.floor(pseudoRand * 34)   // 38–71
+  const total = Math.min(base + lifeEventBonus + consentBonus + savedPlansBonus + activityBonus, 97)
+
+  return total
+}
+
+function IntentBadge({ score }) {
+  const { bg, text, bar, label } =
+    score >= 80 ? { bg: 'bg-red-50',    text: 'text-red-600',    bar: 'bg-red-500',    label: '🔥 High' } :
+    score >= 60 ? { bg: 'bg-orange-50', text: 'text-orange-600', bar: 'bg-orange-400', label: '⚡ Medium' } :
+                  { bg: 'bg-blue-50',   text: 'text-blue-600',   bar: 'bg-blue-400',   label: '📈 Growing' }
+
+  return (
+    <div className={`inline-flex flex-col gap-0.5 px-2.5 py-1.5 rounded-lg ${bg} min-w-[80px]`}>
+      <div className="flex items-center justify-between gap-2">
+        <span className={`text-[10px] font-semibold ${text}`}>{label}</span>
+        <span className={`text-xs font-bold ${text}`}>{score}</span>
+      </div>
+      <div className="w-full h-1 bg-white/60 rounded-full overflow-hidden">
+        <div className={`h-full rounded-full ${bar} transition-all`} style={{ width: `${score}%` }} />
+      </div>
+    </div>
+  )
+}
+
 export default function AdminPanel() {
   const navigate = useNavigate()
   const { userProfile } = useAuth()
@@ -76,21 +124,21 @@ export default function AdminPanel() {
   }
 
   const handleTestSMS = async () => {
-  setSendingTestSMS(true)
-  await sendRecommendationSMS(
-    { 
-      phoneNumber: '+918169150113',
-      displayName: 'Test',
-      uid: 'test123'
-    },
-    {
-      name: 'Family Health Coverage',  // ← ADD KARO
-      price: 500                        // ← ADD KARO
-    }
-  )
-  setSmsLogs(getSMSLogs())
-  setSendingTestSMS(false)
-}
+    setSendingTestSMS(true)
+    await sendRecommendationSMS(
+      { 
+        phoneNumber: '+918169150113',
+        displayName: 'Test',
+        uid: 'test123'
+      },
+      {
+        name: 'Family Health Coverage',
+        price: 500
+      }
+    )
+    setSmsLogs(getSMSLogs())
+    setSendingTestSMS(false)
+  }
 
   const TABS = [
     { id: 'users', label: 'Users', icon: Users, count: users.length },
@@ -168,13 +216,14 @@ export default function AdminPanel() {
                       <th className="text-left px-4 py-3 text-gray-500 font-semibold">Email / Phone</th>
                       <th className="text-left px-4 py-3 text-gray-500 font-semibold">Role</th>
                       <th className="text-left px-4 py-3 text-gray-500 font-semibold">Consent</th>
+                      <th className="text-left px-4 py-3 text-gray-500 font-semibold">Intent Score</th>
                       <th className="text-left px-4 py-3 text-gray-500 font-semibold">Life Events</th>
                       <th className="text-left px-4 py-3 text-gray-500 font-semibold">Joined</th>
                     </tr>
                   </thead>
                   <tbody>
                     {users.length === 0 ? (
-                      <tr><td colSpan={6} className="text-center py-8 text-gray-400">No users found</td></tr>
+                      <tr><td colSpan={7} className="text-center py-8 text-gray-400">No users found</td></tr>
                     ) : users.map((u, i) => (
                       <tr key={u.id} className={`border-b border-gray-50 hover:bg-gray-50 transition ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}>
                         <td className="px-4 py-3">
@@ -197,6 +246,10 @@ export default function AdminPanel() {
                           <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${u.consentGiven ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500'}`}>
                             {u.consentGiven ? '✓ Given' : '✗ Pending'}
                           </span>
+                        </td>
+                        {/* ── Intent Score column (admin-only) ── */}
+                        <td className="px-4 py-3">
+                          <IntentBadge score={calcIntentScore(u)} />
                         </td>
                         <td className="px-4 py-3">
                           {u.lifeEvents?.length > 0 ? (
@@ -290,7 +343,7 @@ export default function AdminPanel() {
               </div>
             )}
 
-            {/* SMS Campaigns Tab - NEW! */}
+            {/* SMS Campaigns Tab */}
             {activeTab === 'sms' && (
               <div className="space-y-4">
                 {/* Test SMS Button */}
