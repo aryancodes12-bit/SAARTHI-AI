@@ -173,7 +173,7 @@ export default function Landing() {
             <p className="text-gray-600 mb-2 flex items-center gap-2 text-sm"><CheckCircle size={16} className="text-green-500" /> Personalized recommendations, no spam</p>
             <p className="text-gray-600 mb-6 flex items-center gap-2 text-sm"><CheckCircle size={16} className="text-green-500" /> DPDP 2023 compliant & Responsible AI</p>
             <div className="flex gap-3">
-              <button onClick={() => window.open('https://youtu.be/VBPUgFXMcxY?si=9o_VuWnCwf1ZpdPX', '_blank')}
+              <button onClick={() => window.open('https://youtu.be/25rVpXAQM1M?si=_GSiwUuJcb0Kmi5r', '_blank')}
                className="bg-[#FF6B00] text-white px-8 py-3 rounded font-bold hover:bg-orange-600 flex items-center gap-2">
                 See Demo <ArrowRight size={16} />
               </button>
@@ -259,7 +259,7 @@ export default function Landing() {
             </div>
           </div>
         </div>
-      </section>
+      </section> 
 
       {/* About Us */}
       <section className="py-16 bg-gray-50" id="about-us">
