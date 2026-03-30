@@ -108,9 +108,7 @@ export default function Onboarding() {
       <div className="w-full max-w-lg">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2">
-            <div className="w-9 h-9 bg-[#FF6B00] rounded-xl flex items-center justify-center">
-              <Shield className="text-white" size={18} />
-            </div>
+            <img src="https://i.ibb.co/DywMwv9/Saarthie-1-removebg-preview.png" alt="SaarthiAI" className="w-9 h-9 object-contain drop-shadow-md" />
             <span className="text-white text-xl font-bold">saarthi<span className="text-[#FF6B00]">ai</span></span>
           </div>
         </div>

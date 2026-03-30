@@ -1,992 +1,424 @@
+// src/pages/CustomerDashboard.jsx
 import ChatWidget from "../components/ChatWidget";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import {
-  Shield,
-  MessageCircle,
-  Phone,
-  Bell,
-  Settings,
-  Star,
-  ChevronRight,
-  Zap,
-  TrendingUp,
-  LogOut,
-  RefreshCw,
-  HelpCircle,
-} from "lucide-react";
+import { Shield, MessageCircle, Phone, Star, ChevronRight, Zap, TrendingUp, RefreshCw } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useBehaviorTracker } from "../hooks/useBehaviorTracker";
-import { logOut } from "../firebase/auth";
-import { getUserLifeEvents, getRecommendations } from "../firebase/firestore";
-import { getAIRecommendations } from "../ai/recommendationEngine";
-import VoiceCallButton from "../components/VoiceCallButton";
+import { getUserLifeEvents, getAllPolicies } from "../firebase/firestore";
+import { initEmailTriggers, useScrollAndTimeTrigger, trackProductViewAndEmail } from "../hooks/useEmailTriggers";
+import { generateRecommendations } from "../ai/claudeAgent";
+import { motion } from "framer-motion";
 
-// ----- CONFIGURATION -----
-const TEXTBEE_API_KEY = "92bb5f37-b10b-47ad-a7e3-110caf803f4a";
-const TEXTBEE_DEVICE_ID = "6997f993deb3cd9fe785aa5e";
-const TEXTMEBOT_API_KEY = "GCa1w4roma8B";
+
+const TEXTBEE_API_KEY = "98583199-400b-4518-a203-30ef9632d6d0";
+const TEXTBEE_DEVICE_ID = "69c58495c3538b609d2039fa";
+const TEXTMEBOT_API_KEY = "puXy9N2m6Q26";
 const ONESIGNAL_APP_ID = "085dddb7-507c-40ef-9ffd-107f87fb2d65";
 
-// ----- WHATSAPP TEMPLATES -----
 const WHATSAPP_TEMPLATES = [
-  `🛡️ *Saarthi AI | Protection Intelligence Report*
-
-Dear Valued Member,
-
-Our AI engine has completed a full analysis of your financial protection profile. Based on your risk indicators and coverage benchmarks, we have identified a *Term Life Plan* that is strongly aligned with your long-term security goals.
-
-*Why this matters now:*
-• Your current coverage may have gaps that grow costlier over time
-• Term life premiums increase with age — locking in early saves significantly
-• Your family's financial continuity depends on acting before uncertainty strikes
-
-✅ *Your personalised plan is ready for review.*
-
-👉 Access your secure dashboard: https://saarthi-ai-mu.vercel.app/
-
-_Saarthi AI — Intelligent Protection, Personalised for You._`,
-
-  `📊 *Saarthi AI | Financial Health Alert*
-
-Hello,
-
-Your *Financial Protection Score* has been recalculated by our AI risk engine using updated market benchmarks and coverage adequacy models.
-
-*Key findings from your assessment:*
-• 3 optimisation opportunities identified in your current portfolio
-• Risk exposure detected in your long-term protection strategy
-• Personalised recommendations generated based on your profile
-
-Our AI has curated solutions designed specifically to close these gaps — without disrupting your current financial commitments.
-
-🔐 *Review your full report here:*
-👉 https://saarthi-ai-mu.vercel.app/
-
-_Saarthi AI — Your AI-Powered Insurance Advisor._`,
-
-  `🎯 *Saarthi AI | Exclusive Opportunity Detected*
-
-Dear Member,
-
-Based on a detailed evaluation of your engagement history and policy structure, our system has flagged a *limited pricing advantage* available on select protection plans curated for your profile.
-
-*What our AI found for you:*
-• Premium efficiency optimisation available on your coverage tier
-• Strategic plan adjustment could improve your protection by up to 40%
-• Window for this advantage is time-sensitive
-
-Don't let this opportunity pass — our AI has done the analysis. All you need to do is review.
-
-💼 *Explore your personalised offer:*
-👉 https://saarthi-ai-mu.vercel.app/
-
-_Saarthi AI — Smarter Decisions. Stronger Protection._`,
-
-  `⏳ *Saarthi AI | Coverage Review Reminder*
-
-Hello,
-
-It has been a while since your family protection plan was benchmarked against current healthcare inflation and economic risk indices.
-
-*Here's what has changed:*
-• Medical inflation in India is rising at 14% annually
-• Your existing coverage limits may no longer be sufficient
-• A single hospitalisation event can now cost ₹5–15 lakhs+
-
-Our AI has proactively assessed your exposure and prepared a *personalised coverage enhancement recommendation* — at no extra effort from your side.
-
-🔎 *View your updated protection analysis:*
-👉 https://saarthi-ai-mu.vercel.app/
-
-_Saarthi AI — Always Watching. Always Protecting._`,
-
-  `💡 *Saarthi AI | Critical Coverage Gap Detected*
-
-Dear Member,
-
-During our continuous AI monitoring cycle, our system flagged a *potential shortfall* in your health insurance coverage when stress-tested against high-cost hospitalisation scenarios.
-
-*Risk Summary:*
-• Current policy: May leave you exposed above ₹3–5 lakh threshold
-• Projected gap: Significant out-of-pocket liability in critical events
-• Recommended action: Top-Up plan to reinforce existing coverage
-
-We have already prepared a solution aligned with your risk profile and financial health index. It takes less than 2 minutes to review.
-
-🛡️ *Secure your gap analysis + recommendation:*
-👉 https://saarthi-ai-mu.vercel.app/
-
-_Saarthi AI — Precision Protection Intelligence._`,
-
-  `⚡ *Saarthi AI | Strategic Enhancement Recommended*
-
-Hello,
-
-Healthcare costs are evolving faster than most standard policies account for. Our AI has analysed your current protection structure and identified a *high-priority enhancement opportunity.*
-
-*AI Recommendation Summary:*
-• Add a Top-Up layer to absorb high-value claim scenarios
-• Maintain premium efficiency while maximising coverage ceiling
-• Protect against financial shock during extended medical events
-
-This is not a generic suggestion — it is a personalised, data-backed recommendation built from your unique financial behaviour and risk profile.
-
-📈 *Act on your AI recommendation today:*
-👉 https://saarthi-ai-mu.vercel.app/
-
-_Saarthi AI — Because Generic Advice Is Never Enough._`,
+  `╔══════════════════════════════╗\n  🛡️  *SAARTHI AI — PROTECTION ALERT*\n╚══════════════════════════════╝\n\nNameste! 🙏\n\nOur AI ran a *full risk analysis* on your profile.\n\n🔴 Coverage Gap Detected\n📈 Term life premiums rising with age\n\n✅ *Term Life Plan* — ₹1 Crore from ₹490/month\n\n🔗 https://saarthi-ai-mu.vercel.app/\n\n_SaarthiAI — Built for Bharat_ 🇮🇳`,
+  `📊 *YOUR FINANCIAL HEALTH SCORE*\n\n⚡ 3 critical gaps found\n💸 Medical inflation: *14% per year*\n🏥 1 hospitalisation = ₹5–15 Lakhs+\n\n🩺 Health Top-Up Plan ready.\n\n🔗 https://saarthi-ai-mu.vercel.app/\n\n_SaarthiAI — Your Family Deserves the Best_ ❤️`,
+  `🚨 *EXCLUSIVE OPPORTUNITY DETECTED*\n\n📈 Coverage boost up to *40%*\n💰 No major change in monthly cost\n\n💼 Explore now:\n🔗 https://saarthi-ai-mu.vercel.app/\n\n_SaarthiAI — Smarter Decisions._ 🛡️`,
+  `⏰ *COVERAGE REVIEW REMINDER*\n\n🏥 Medical inflation: *14% annually*\n🔢 80% of Indians are *underinsured*\n\n✅ Top 3 enhancement options waiting\n\n🔗 https://saarthi-ai-mu.vercel.app/\n\n_SaarthiAI — Always Protecting._ 👁️`,
+  `🎉 *LIFE EVENT DETECTED BY AI*\n\n🏠 Home Loan Protection\n👨‍👩‍👧 Term Life\n❤️ Health Floater\n🎓 Child ULIP\n\n✅ Compare 50+ top Indian insurers\n\n🔗 https://saarthi-ai-mu.vercel.app/\n\n_SaarthiAI — Har Pal Saath._ 🙏`,
+  `🌅 *RETIREMENT PLANNING ALERT*\n\n📉 Only 12% Indians have pension\n💸 Inflation erodes savings 6% p.a.\n\n🌟 NPS + Annuity plans ready for you.\n\n🔗 https://saarthi-ai-mu.vercel.app/\n\n_SaarthiAI — Aapka Kal Surakshit._ 🇮🇳`,
 ]
 
-// ----- SMS TEMPLATES -----
 const SMS_TEMPLATES = [
-  `Saarthi AI | Protection Alert
-
-Hi, our AI has detected a coverage gap in your health insurance profile.
-
-With medical costs rising 14% annually, your current policy may leave you exposed during high-value hospitalisations.
-
-We've prepared a personalised Top-Up recommendation based on your risk score.
-
-Review it here:
-https://saarthi-ai-mu.vercel.app/
-
-Saarthi AI — Intelligent Protection.`,
-
-  `Saarthi AI | Smart Coverage Update
-
-Your Financial Health Score was recalculated today.
-
-Our AI identified 3 optimisation opportunities in your current protection portfolio — and has already prepared solutions tailored to your profile.
-
-Don't wait for a claim to find the gaps.
-
-View your report:
-https://saarthi-ai-mu.vercel.app/
-
-Saarthi AI — Always a Step Ahead.`,
-
-  `Saarthi AI | Action Required
-
-A potential shortfall has been flagged in your health insurance coverage limits.
-
-Based on current hospitalisation cost trends, your existing policy may not fully protect you in a critical medical event.
-
-Your personalised upgrade recommendation is ready.
-
-Access it now:
-https://saarthi-ai-mu.vercel.app/
-
-Takes under 2 mins. Your future self will thank you.`,
-
-  `Saarthi AI | Exclusive Insight Ready
-
-Our AI has prepared a personalised coverage enhancement plan based on your recent activity and insurance profile.
-
-A smart Top-Up addition could reduce your financial exposure significantly — without a major change in premium.
-
-See your custom recommendation:
-https://saarthi-ai-mu.vercel.app/
-
-Saarthi AI — Smarter Decisions. Stronger Protection.`,
+  `SAARTHI AI ALERT: Coverage gap detected! Medical costs rising 14% p.a. Top-Up plan ready: https://saarthi-ai-mu.vercel.app/ Reply STOP`,
+  `SAARTHI AI: Protection Score updated! 3 critical gaps found. View: https://saarthi-ai-mu.vercel.app/ Reply STOP`,
+  `SAARTHI AI URGENT: Health cover shortfall! 1 hospitalisation = Rs5-15L. Plan ready: https://saarthi-ai-mu.vercel.app/ Reply STOP`,
+  `SAARTHI AI: Smart Top-Up boosts protection 40%: https://saarthi-ai-mu.vercel.app/ Reply STOP`,
+  `SAARTHI AI: Rs1Cr term cover from Rs490/mo. Free analysis: https://saarthi-ai-mu.vercel.app/ Reply STOP`,
+  `SAARTHI AI: Medical inflation 14% pa. Coverage analysis ready: https://saarthi-ai-mu.vercel.app/ Reply STOP`,
 ]
-
-// ----- REAL PRODUCT DATA (from your table) -----
-const PRODUCTS = [
-  // Term Life
-  {
-    name: "SecureTerm 30",
-    type: "Term Life",
-    url: "https://www.canarahsbclife.com/term-insurance/30-year-term-insurance-plan",
-    icon: "🛡️",
-    urgency: "high",
-    reason: "Ideal for covering your family for 30 years at low cost.",
-  },
-  {
-    name: "Family Shield Term 20",
-    type: "Term Life",
-    url: "https://www.bajajallianzlife.com/term-insurance/iprotect-smart-term-plan.jsp",
-    icon: "🛡️",
-    urgency: "medium",
-    reason: "Smart term plan with return of premium option.",
-  },
-  {
-    name: "IncomeSecure Term",
-    type: "Term Life",
-    url: "https://www.posb.com.sg/personal/insurance/endowment/income-stream-plans/manulife-incomesecure",
-    icon: "🛡️",
-    urgency: "medium",
-    reason: "Regular income for your family in your absence.",
-  },
-  {
-    name: "Mortgage Protection Plan",
-    type: "Term Life",
-    url: "https://www.hsbc.com.hk/insurance/products/life/mortgage-protection/",
-    icon: "🛡️",
-    urgency: "low",
-    reason: "Protect your mortgage repayments.",
-  },
-
-  // Health
-  {
-    name: "HealthGuard Comprehensive",
-    type: "Health",
-    url: "https://www.religarehealthinsurance.com/health-insurance-plans/health-advantedge",
-    icon: "❤️",
-    urgency: "high",
-    reason: "Comprehensive cover with wellness benefits.",
-  },
-  {
-    name: "WellnessPrime Health Plan",
-    type: "Health",
-    url: "https://play.google.com/store/apps/details?id=com.wealthassure.wealthassureapp",
-    icon: "❤️",
-    urgency: "medium",
-    reason: "Digital-first health plan with telemedicine.",
-  },
-  {
-    name: "Critical Illness Cover",
-    type: "Health",
-    url: "https://www.axismaxlife.com/term-insurance-plans/critical-illness",
-    icon: "❤️",
-    urgency: "high",
-    reason: "Lump sum on diagnosis of 35 critical illnesses.",
-  },
-  {
-    name: "Senior Citizen Health Plan",
-    type: "Health",
-    url: "https://www.hdfclife.com/health-insurance-plans/health-insurance-for-senior-citizens",
-    icon: "❤️",
-    urgency: "medium",
-    reason: "Tailored for parents and seniors.",
-  },
-  {
-    name: "Maternity & Newborn Plan",
-    type: "Health",
-    url: "https://www.nivaanlife.com/health-insurance/maternity-cover",
-    icon: "❤️",
-    urgency: "medium",
-    reason: "Covers delivery and newborn expenses.",
-  },
-  {
-    name: "TopUp Mediclaim",
-    type: "Health",
-    url: "https://www.adityabirlahealth.com/healthinsurance/super-health-topup",
-    icon: "❤️",
-    urgency: "low",
-    reason: "Super top-up for high medical bills.",
-  },
-
-  // Home
-  {
-    name: "HomeSafe Standard Cover",
-    type: "Home",
-    url: "https://www.hdfcergo.com/home-insurance/home-insurance-policy",
-    icon: "🏠",
-    urgency: "high",
-    reason: "Basic coverage for structure and contents.",
-  },
-  {
-    name: "HomeShield Premium",
-    type: "Home",
-    url: "https://www.tp-link.com/us/homeshield/",
-    icon: "🏠",
-    urgency: "low",
-    reason: "Premium protection with gadget cover.",
-  },
-  {
-    name: "Tenant Insurance",
-    type: "Home",
-    url: "https://www.thepersonal.com/insurance/home-insurance/coverage/tenant.html",
-    icon: "🏠",
-    urgency: "medium",
-    reason: "Ideal for renters.",
-  },
-  {
-    name: "Landlord Shield",
-    type: "Home",
-    url: "https://www.sbi-general.in/landlord-insurance",
-    icon: "🏠",
-    urgency: "medium",
-    reason: "Cover for rental income and property damage.",
-  },
-
-  // Motor
-  {
-    name: "DriveEasy Motor Protect",
-    type: "Motor",
-    url: "https://www.bharti-axagi.co.in/motor-insurance",
-    icon: "🚗",
-    urgency: "high",
-    reason: "Comprehensive car insurance with add-ons.",
-  },
-  {
-    name: "RoadGuard Comprehensive",
-    type: "Motor",
-    url: "https://www.tataaig.com/motor-insurance/car-insurance",
-    icon: "🚗",
-    urgency: "high",
-    reason: "Zero depreciation and roadside assistance.",
-  },
-  {
-    name: "Two Wheeler Insurance",
-    type: "Motor",
-    url: "https://www.bajajallianz.com/two-wheeler-insurance.html",
-    icon: "🚗",
-    urgency: "medium",
-    reason: "Cover for bikes and scooters.",
-  },
-  {
-    name: "Fleet Insurance",
-    type: "Motor",
-    url: "https://www.icicilombard.com/business-insurance/fleet",
-    icon: "🚗",
-    urgency: "low",
-    reason: "For businesses with multiple vehicles.",
-  },
-
-  // Child
-  {
-    name: "BrightFuture Child ULIP",
-    type: "Child",
-    url: "https://lifeinsurance.pnbmetlife.com/child-insurance-plans/youngstar-unit-linked-plan",
-    icon: "🎓",
-    urgency: "high",
-    reason: "Market-linked plan for child's education.",
-  },
-  {
-    name: "EduGrow Child ULIP Plus",
-    type: "Child",
-    url: "https://www.tataaia.com/life-insurance-plans/child-plans/future-child-plan.html",
-    icon: "🎓",
-    urgency: "high",
-    reason: "Build corpus for higher studies.",
-  },
-
-  // Retirement
-  {
-    name: "RetireSmart Deferred Annuity",
-    type: "Retire",
-    url: "https://www.iciciprulife.com/retirement-plans/immediate-deferred-annuity-plan.html",
-    icon: "🌅",
-    urgency: "medium",
-    reason: "Immediate or deferred annuity options.",
-  },
-  {
-    name: "GoldenNest Retirement Plan",
-    type: "Retire",
-    url: "https://www.sbilife.co.in/en/pension-plans/golden-years-pension-plan",
-    icon: "🌅",
-    urgency: "high",
-    reason: "Guaranteed pension for golden years.",
-  },
-  {
-    name: "FutureIncome Retirement Plus",
-    type: "Retire",
-    url: "https://www.exideinsurance.com/exide-life-future-income-plan",
-    icon: "🌅",
-    urgency: "medium",
-    reason: "Regular income post retirement.",
-  },
-  {
-    name: "Pension Plus",
-    type: "Retire",
-    url: "https://www.maxlifeinsurance.com/pension-plans/pension-plus-plan",
-    icon: "🌅",
-    urgency: "medium",
-    reason: "Flexible pension with lump sum.",
-  },
-  {
-    name: "Annuity Guarantee",
-    type: "Retire",
-    url: "https://www.canarahsbclife.com/retirement-plans/guaranteed-annuity-plan",
-    icon: "🌅",
-    urgency: "low",
-    reason: "Guaranteed annuity for life.",
-  },
-  {
-    name: "NPS Turbo",
-    type: "Retire",
-    url: "https://www.hdfclife.com/retirement-plans/nps-pension-plan",
-    icon: "🌅",
-    urgency: "low",
-    reason: "National Pension Scheme with tax benefits.",
-  },
-];
-
-const QUICK_LINKS = [
-  {
-    icon: "🛡️",
-    label: "Term Life",
-    color: "bg-blue-50 text-blue-700",
-    url: "https://www.canarahsbclife.com/term-insurance/30-year-term-insurance-plan",
-  },
-  {
-    icon: "❤️",
-    label: "Health",
-    color: "bg-red-50 text-red-700",
-    url: "https://www.religarehealthinsurance.com/health-insurance-plans/health-advantedge",
-  },
-  {
-    icon: "🏠",
-    label: "Home",
-    color: "bg-green-50 text-green-700",
-    url: "https://www.hdfcergo.com/home-insurance/home-insurance-policy",
-  },
-  {
-    icon: "🚗",
-    label: "Motor",
-    color: "bg-orange-50 text-orange-700",
-    url: "https://www.bharti-axagi.co.in/motor-insurance",
-  },
-  {
-    icon: "🎓",
-    label: "Child",
-    color: "bg-purple-50 text-purple-700",
-    url: "https://lifeinsurance.pnbmetlife.com/child-insurance-plans/youngstar-unit-linked-plan",
-  },
-  {
-    icon: "🌅",
-    label: "Retire",
-    color: "bg-yellow-50 text-yellow-700",
-    url: "https://www.iciciprulife.com/retirement-plans/immediate-deferred-annuity-plan.html",
-  },
-];
 
 export default function CustomerDashboard() {
-  const navigate = useNavigate();
-  const { user, userProfile } = useAuth();
-  const { trackPageView, trackProductView, trackTimeOnPage, getBehaviorData } =
-    useBehaviorTracker();
+  const navigate = useNavigate()
+  const { user, userProfile } = useAuth()
+  const { trackPageView, trackProductView, trackTimeOnPage, getBehaviorData } = useBehaviorTracker()
 
-  const notificationsSent = useRef(false);
+  useScrollAndTimeTrigger(user, userProfile)
 
-  const [lifeEvents, setLifeEvents] = useState([]);
-  const [recommendations, setRecommendations] = useState([]);
-  const [displayedRecs, setDisplayedRecs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [intentScore, setIntentScore] = useState(0);
-  const [refreshSeed, setRefreshSeed] = useState(0);
-  const [showNotif, setShowNotif] = useState(false);
+  const notificationsSent = useRef(false)
+  const [lifeEvents, setLifeEvents] = useState([])
+  const [recommendations, setRecommendations] = useState([])
+  const [displayedRecs, setDisplayedRecs] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [refreshSeed, setRefreshSeed] = useState(0)
+  const [allPolicies, setAllPolicies] = useState([])
+  const [dynamicQuickLinks, setDynamicQuickLinks] = useState([])
 
-  // Extract phone number
-  const displayPhone =
-    userProfile?.phoneNumber ||
-    userProfile?.mobileNumber ||
-    userProfile?.mobile ||
-    user?.phoneNumber ||
-    "Not Found";
+  const displayPhone = userProfile?.phoneNumber || userProfile?.mobileNumber || userProfile?.mobile || user?.phoneNumber || "Not Found"
 
   useEffect(() => {
-    trackPageView("/dashboard");
-    loadDashboardData();
-    return () => {
-      trackTimeOnPage("/dashboard");
-    };
-  }, [user]);
+    trackPageView("/dashboard")
+    loadDashboardData()
+    if (user && userProfile) initEmailTriggers(user, userProfile)
+    return () => trackTimeOnPage("/dashboard")
+  }, [user, userProfile])
+
+  useEffect(() => { if (recommendations.length > 0) updateDisplayedRecs() }, [recommendations, refreshSeed])
 
   useEffect(() => {
-    if (recommendations.length > 0) {
-      updateDisplayedRecs();
+    if (user && displayPhone !== "Not Found" && displayPhone.length > 9 && !notificationsSent.current) {
+      notificationsSent.current = true
+      setTimeout(() => triggerNotifications(displayPhone), 2000)
     }
-  }, [recommendations, refreshSeed]);
-
-  // Auto-trigger notifications + OneSignal
-  useEffect(() => {
-    if (user && displayPhone !== "Not Found" && displayPhone.length > 9) {
-      if (!notificationsSent.current) {
-        notificationsSent.current = true;
-        setTimeout(() => triggerNotifications(displayPhone), 2000);
-      }
+    if (!window.OneSignalDeferred) {
+      window.OneSignalDeferred = []
+      const s = document.createElement("script")
+      s.src = "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
+      s.defer = true
+      document.head.appendChild(s)
     }
-
-    const initOneSignal = async () => {
-      if (!window.OneSignalDeferred) {
-        window.OneSignalDeferred = [];
-        const script = document.createElement("script");
-        script.id = "onesignal-script";
-        script.src =
-          "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js";
-        script.defer = true;
-        document.head.appendChild(script);
-      }
-      window.OneSignalDeferred.push(async function (OneSignal) {
-        await OneSignal.init({
-          appId: ONESIGNAL_APP_ID,
-          allowLocalhostAsSecureOrigin: true,
-          notifyButton: { enable: true },
-        });
-        OneSignal.Slidedown.promptPush({ force: true });
-      });
-    };
-    initOneSignal();
-  }, [user, displayPhone]);
+    window.OneSignalDeferred?.push?.(async (O) => {
+      await O.init({ appId: ONESIGNAL_APP_ID, allowLocalhostAsSecureOrigin: true, notifyButton: { enable: true } })
+      O.Slidedown.promptPush({ force: true })
+    })
+  }, [user, displayPhone])
 
   const triggerNotifications = async (phoneNumber) => {
-    let formattedPhone = phoneNumber.replace(/\s/g, "");
-    if (!formattedPhone.startsWith("+")) {
-      if (formattedPhone.startsWith("0"))
-        formattedPhone = formattedPhone.substring(1);
-      formattedPhone = "+91" + formattedPhone;
-    }
+    let fp = phoneNumber.replace(/\s/g, "").replace(/\+/g, "")
+    if (fp.startsWith("0")) fp = fp.substring(1)
+    if (!fp.startsWith("91")) fp = "91" + fp
 
-    console.log("🚀 Auto-Triggering (Silent Mode) for:", formattedPhone);
-
-    const randomSmsIndex = Math.floor(Math.random() * SMS_TEMPLATES.length);
-    const randomWaIndex = Math.floor(Math.random() * WHATSAPP_TEMPLATES.length);
-    const selectedSmsMsg = SMS_TEMPLATES[randomSmsIndex];
-    const selectedWaMsg = WHATSAPP_TEMPLATES[randomWaIndex];
-
-    console.log(`🎰 Selected SMS Variation: ${randomSmsIndex + 1}`);
-    console.log(`🎰 Selected WA Variation: ${randomWaIndex + 1}`);
+    const si = Math.floor(Math.random() * SMS_TEMPLATES.length)
+    const wi = Math.floor(Math.random() * WHATSAPP_TEMPLATES.length)
 
     try {
       await axios.post(
         `https://api.textbee.dev/api/v1/gateway/devices/${TEXTBEE_DEVICE_ID}/send-sms`,
-        { recipients: [formattedPhone], message: selectedSmsMsg },
-        { headers: { "x-api-key": TEXTBEE_API_KEY } },
-      );
-
-      const encodedMsg = encodeURIComponent(selectedWaMsg);
-      const encodedPhone = encodeURIComponent(formattedPhone);
-      fetch(
-        `http://api.textmebot.com/send.php?recipient=${encodedPhone}&apikey=${TEXTMEBOT_API_KEY}&text=${encodedMsg}`,
-        {
-          mode: "no-cors",
-        },
-      ).catch((err) => console.log("WA error", err));
-
-      console.log("✅ Alerts Sent Silently");
-    } catch (error) {
-      console.error(error);
+        { recipients: [`+${fp}`], message: SMS_TEMPLATES[si] },
+        { headers: { "x-api-key": TEXTBEE_API_KEY } }
+      )
+    } catch (e) {
+      console.error("❌ TextBee Error:", e?.response?.data || e.message)
     }
-  };
+
+    try {
+      // FIX: Use the Vite proxy (/textmebot) to bypass CORS issues
+      const waUrl = new URL(window.location.origin + "/textmebot/send.php");
+      waUrl.searchParams.append("recipient", fp);
+      waUrl.searchParams.append("apikey", TEXTMEBOT_API_KEY);
+      waUrl.searchParams.append("text", WHATSAPP_TEMPLATES[wi]);
+      waUrl.searchParams.append("cb", Date.now());
+      
+      // Axios is more reliable for GET requests with query params
+      await axios.get(waUrl.toString());
+
+      // Console Feedback as requested
+      console.log("%c🚀 AI TRIGGER SUCCESSFUL", "color: #0B1F4B; font-weight: bold; font-size: 14px; background: #E0F2FE; padding: 4px 8px; border-radius: 4px;");
+      console.log("📱 SMS Template:", `#${si + 1}`);
+      console.log("💬 WhatsApp Template:", `#${wi + 1}`);
+      console.log("📄 SMS Content:", SMS_TEMPLATES[si]);
+      console.log("📄 WhatsApp Content:", WHATSAPP_TEMPLATES[wi]);
+    } catch (e) {
+      console.error("❌ WhatsApp Request Failed:", e.message);
+    }
+  }
 
   const loadDashboardData = async () => {
-    if (!user || !userProfile) return;
-    setLoading(true);
+    if (!user || !userProfile) return
+    setLoading(true)
     try {
-      const [events] = await Promise.all([getUserLifeEvents(user.uid)]);
-      const uniqueEvents = events.filter(
-        (e, idx, arr) => arr.findIndex((x) => x.type === e.type) === idx,
-      );
-      setLifeEvents(uniqueEvents);
+      const [events, policies] = await Promise.all([
+        getUserLifeEvents(user.uid),
+        getAllPolicies()
+      ])
+      
+      const uniqueEvents = events.filter((e, i, a) => a.findIndex(x => x.type === e.type) === i)
+      setLifeEvents(uniqueEvents)
+      setAllPolicies(policies)
 
-      let scored = PRODUCTS.map((p) => {
-        let score = 0;
-        if (
-          events.some((e) =>
-            e.label.toLowerCase().includes(p.type.toLowerCase()),
-          )
-        ) {
-          score += 20;
-        }
-        const behavior = getBehaviorData();
-        if (behavior?.productInterests?.[p.type]) {
-          score += 15;
-        }
-        score += Math.random() * 30;
-        return { ...p, score };
-      });
-      scored.sort((a, b) => b.score - a.score);
-      const topRecs = scored.slice(0, 6);
-      setRecommendations(topRecs);
+      const categoryIcons = { health: "❤️", term: "🛡️", motor: "🚗", home: "🏠", child: "🎓", retire: "🌅" }
+      const categoryColors = { 
+        health: "bg-red-50 text-red-700", 
+        term: "bg-blue-50 text-blue-700", 
+        motor: "bg-orange-50 text-orange-700", 
+        home: "bg-green-50 text-green-700", 
+        child: "bg-purple-50 text-purple-700", 
+        retire: "bg-yellow-50 text-yellow-700" 
+      }
 
-      const behavior = getBehaviorData();
-      const rawScore = Math.min(
-        (behavior?.pageViews?.["/dashboard"] || 0) * 10 +
-          Object.values(behavior?.productInterests || {}).flat().length * 8,
-        100,
-      );
-      const scaledScore = Math.floor(20 + (rawScore / 100) * 70);
-      setIntentScore(scaledScore);
-    } catch (err) {
-      console.error("Dashboard load error:", err);
+      const categories = [...new Set(policies.map(p => p.category.toLowerCase()))]
+      const links = categories.map(cat => ({
+        icon: categoryIcons[cat] || "🛡️",
+        label: cat.charAt(0).toUpperCase() + cat.slice(1),
+        color: categoryColors[cat] || "bg-gray-50 text-gray-700",
+        url: "/compare"
+      }))
+      setDynamicQuickLinks(links)
+      
+      const aiRecs = await generateRecommendations(userProfile, uniqueEvents, getBehaviorData())
+      setRecommendations(aiRecs.map(r => ({ ...r, id: Math.random() })))
+    } catch (e) {
+      console.error("Dashboard load error:", e)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const updateDisplayedRecs = () => {
-    if (recommendations.length === 0) return;
-    if (displayedRecs.length === 0) {
-      setDisplayedRecs(recommendations.slice(0, 3));
-      return;
-    }
-    const currentIds = displayedRecs.map((r) => r.name);
-    const available = recommendations.filter(
-      (r) => !currentIds.includes(r.name),
-    );
-    if (available.length === 0) {
-      const shuffled = [...displayedRecs].sort(() => Math.random() - 0.5);
-      setDisplayedRecs(shuffled);
-      return;
-    }
-    const replaceIndex = Math.floor(Math.random() * 3);
-    const newProduct = available[Math.floor(Math.random() * available.length)];
-    const newDisplay = [...displayedRecs];
-    newDisplay[replaceIndex] = newProduct;
-    setDisplayedRecs(newDisplay);
-  };
-
-  const handleSignOut = async () => {
-    await logOut();
-    navigate("/");
-  };
-
-  const handleQuickLinkClick = (link) => {
-    trackProductView(link.label, link.label);
-    window.open(link.url, "_blank");
-  };
-
-  const handleRefreshRecommendations = () => {
-    setRefreshSeed((prev) => prev + 1);
-  };
+    if (!recommendations.length) return
+    setDisplayedRecs(recommendations.slice(0, 3))
+  }
 
   const handleRecommendationClick = (product) => {
-    trackProductView(product.name, product.type);
-    window.open(product.url, "_blank");
-  };
+    const name = product.productName || product.name
+    const type = product.productType || product.type
+    const url = product.url || 'https://saarthi-ai-mu.vercel.app/'
 
-  const firstName = userProfile?.displayName?.split(" ")[0] || "there";
+    trackProductView(name, type)
+    trackProductViewAndEmail(user, userProfile, name, type)
+    window.open(url, "_blank")
+  }
+
+  const firstName = userProfile?.displayName?.split(" ")[0] || "there"
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-      {/* Top Nav */}
-      <nav className="bg-[#0B1F4B] px-6 py-3 flex items-center justify-between sticky top-0 z-40 shadow-lg">
-        <div className="flex items-center gap-2">
-          <img
-            src="https://i.ibb.co/DywMwv9/Saarthie-1-removebg-preview.png"
-            alt="logo"
-            className="w-8 h-8 animate-pulse"
-          />
-          <span className="text-white font-bold text-lg">
-            Saarthi<span className="text-[#FF6B00]">AI</span>
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* Notification Bell */}
-          <div className="relative">
-            <button
-              onClick={() => setShowNotif((v) => !v)}
-              className="relative text-white/70 hover:text-white transition-transform hover:scale-110"
-            >
-              <Bell size={24} />
-              {(lifeEvents.length > 0 || displayedRecs.length > 0) && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#FF6B00] rounded-full text-white text-[9px] font-bold flex items-center justify-center">
-                  {lifeEvents.length + displayedRecs.length > 9
-                    ? "9+"
-                    : lifeEvents.length + displayedRecs.length}
-                </span>
-              )}
-            </button>
-
-            {/* Dropdown */}
-            {showNotif && (
-              <div className="absolute right-0 top-9 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-slideDown">
-                <div className="bg-[#0B1F4B] px-4 py-3 flex items-center justify-between">
-                  <p className="text-white font-bold text-sm">Notifications</p>
-                  <button
-                    onClick={() => setShowNotif(false)}
-                    className="text-white/50 hover:text-white text-xs"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <div className="max-h-80 overflow-y-auto">
-                  {lifeEvents.length > 0 && (
-                    <div className="px-4 pt-3 pb-1">
-                      <p className="text-xs font-semibold text-gray-400 uppercase mb-2">
-                        🎯 Detected Life Events
-                      </p>
-                      {lifeEvents.map((e, i) => (
-                        <div
-                          key={i}
-                          className="flex items-center gap-2 py-2 border-b border-gray-50 last:border-0"
-                        >
-                          <span className="text-base">
-                            {e.label?.split(" ")[0]}
-                          </span>
-                          <div>
-                            <p className="text-sm font-medium text-gray-800">
-                              {e.label}
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              {e.detectedAt
-                                ? new Date(e.detectedAt).toLocaleDateString(
-                                    "en-IN",
-                                  )
-                                : "Recently detected"}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {displayedRecs.length > 0 && (
-                    <div className="px-4 pt-3 pb-3">
-                      <p className="text-xs font-semibold text-gray-400 uppercase mb-2">
-                        ⚡ AI Recommendations
-                      </p>
-                      {displayedRecs.map((r, i) => (
-                        <div
-                          key={i}
-                          className="flex items-center gap-2 py-2 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 rounded-lg px-1 transition"
-                          onClick={() => {
-                            window.open(r.url, "_blank");
-                            setShowNotif(false);
-                          }}
-                        >
-                          <span className="text-base">{r.icon}</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-800 truncate">
-                              {r.name}
-                            </p>
-                            <p className="text-xs text-gray-400">{r.type}</p>
-                          </div>
-                          <ChevronRight
-                            size={14}
-                            className="text-gray-300 flex-shrink-0"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {lifeEvents.length === 0 && displayedRecs.length === 0 && (
-                    <div className="px-4 py-8 text-center text-gray-400 text-sm">
-                      No notifications yet
-                    </div>
-                  )}
-                </div>
-                <div className="border-t border-gray-100 px-4 py-2">
-                  <button
-                    onClick={() => {
-                      navigate("/chat");
-                      setShowNotif(false);
-                    }}
-                    className="w-full text-xs text-[#FF6B00] font-semibold hover:underline text-center py-1"
-                  >
-                    Chat with AI for personalized advice →
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Support Button */}
-          <button
-            onClick={() => navigate("/support")}
-            className="text-white/50 hover:text-white transition-transform hover:scale-110"
-            title="Support"
-          >
-            <HelpCircle size={25} />
-          </button>
-
-          <button
-            onClick={handleSignOut}
-            className="text-white/50 hover:text-white transition-transform hover:scale-110"
-          >
-            <LogOut size={25} />
-          </button>
-          <div className="w-8 h-8 bg-[#FF6B00] rounded-full flex items-center justify-center text-white font-bold text-sm animate-bounce [animation-duration:2s]">
-            {firstName[0]?.toUpperCase()}
-          </div>
-        </div>
-      </nav>
-
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+
         {/* Welcome Card */}
-        <div className="bg-gradient-to-r from-[#0B1F4B] to-[#1a3468] rounded-2xl p-6 text-white shadow-xl animate-fadeIn">
-          <div className="flex justify-between items-start">
+        <div className="bg-gradient-to-r from-[#0B1F4B] to-[#1a3468] rounded-2xl p-6 text-white shadow-xl">
+          <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-200 text-sm">Good day,</p>
-              <h1 className="text-2xl font-bold">{firstName} 👋</h1>
-              <p className="text-blue-200 text-sm mt-1">
-                Your AI advisor is ready
-              </p>
-              {/* Phone Display */}
-              <div className="flex items-center gap-2 text-blue-200 text-xs mt-1">
-                <Phone size={12} />
-                <span>{displayPhone}</span>
-              </div>
+              <h1 className="text-2xl font-bold mt-0.5">{firstName} 👋</h1>
+              <p className="text-blue-200 text-sm mt-1">Your AI advisor is ready</p>
+              <div className="flex items-center gap-2 text-blue-200 text-xs mt-1"><Phone size={12} /><span>{displayPhone}</span></div>
             </div>
-            {/* <div className="text-right">
-              <div className="bg-white/10 rounded-xl px-4 py-2 backdrop-blur-sm">
-                <p className="text-xs text-blue-200">Intent Score</p>
-                <p className="text-2xl font-bold text-[#FF6B00]">
-                  {intentScore}
-                </p>
-                <p className="text-xs text-blue-200">/ 100</p>
-              </div>
-            </div> */}
-          </div>
-
-          {lifeEvents.length > 0 && (
-            <div className="mt-4 flex gap-2 flex-wrap animate-slideUp">
-              <p className="text-xs text-blue-200 w-full">
-                🎯 Detected life events:
-              </p>
-              {lifeEvents.map((e, i) => (
-                <span
-                  key={i}
-                  className="bg-[#FF6B00] text-white text-xs px-2 py-1 rounded-full shadow-md"
-                >
-                  {e.label}
-                </span>
-              ))}
-            </div>
-          )}
-
-          <div className="flex gap-3 mt-5">
-            <button
-              onClick={() => navigate("/chat")}
-              className="w-full bg-[#FF6B00] text-white py-2.5 rounded-xl text-sm font-bold hover:bg-orange-600 transition-all hover:scale-105 hover:shadow-lg flex items-center justify-center gap-2"
+            
+            <button 
+              onClick={() => navigate('/profile')}
+              className="w-16 h-16 rounded-full border-4 border-white/20 overflow-hidden shadow-2xl hover:scale-110 hover:border-white/40 transition-all duration-300 btn-press group relative"
             >
-              <MessageCircle size={16} /> Chat with AI
+              {userProfile?.photoURL ? (
+                <img src={userProfile.photoURL} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-[#FF6B00] flex items-center justify-center text-white text-2xl font-black">
+                  {firstName[0]?.toUpperCase()}
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <span className="text-[8px] font-bold text-white tracking-widest uppercase">Edit</span>
+              </div>
             </button>
           </div>
+          {lifeEvents.length > 0 && (
+            <div className="mt-4 flex gap-2 flex-wrap">
+              <p className="text-xs text-blue-200 w-full">🎯 Detected life events:</p>
+              {lifeEvents.map((e, i) => <span key={i} className="bg-[#FF6B00] text-white text-xs px-2 py-1 rounded-full">{e.label}</span>)}
+            </div>
+          )}
+          <button onClick={() => navigate("/chat")} className="mt-5 w-full bg-[#FF6B00] text-white py-2.5 rounded-xl text-sm font-bold hover:bg-orange-600 transition flex items-center justify-center gap-2">
+            <MessageCircle size={16} /> Chat with AI
+          </button>
         </div>
 
-        {/* Quick Links */}
-        <div>
-          <h2 className="text-sm font-semibold text-gray-600 mb-3">
-            Quick Browse
-          </h2>
-          <div className="grid grid-cols-6 gap-2">
-            {QUICK_LINKS.map((link) => (
-              <button
-                key={link.label}
-                onClick={() => handleQuickLinkClick(link)}
-                className={`${link.color} rounded-xl p-3 text-center transition-all hover:scale-110 hover:shadow-md active:scale-95`}
-              >
-                <div className="text-xl mb-1">{link.icon}</div>
-                <p className="text-xs font-medium">{link.label}</p>
-              </button>
-            ))}
+        {/* Browse Categories */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-lg font-bold text-[#0B1F4B] font-outfit tracking-tight">Browse Categories</h2>
+            <div className="h-px flex-1 bg-gradient-to-r from-gray-200 to-transparent" />
           </div>
-        </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {dynamicQuickLinks.length > 0 ? dynamicQuickLinks.map((link, idx) => (
+              <motion.button 
+                key={link.label} 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3 + idx * 0.05 }}
+                onClick={() => navigate(link.url)} 
+                className={`group relative overflow-hidden bg-white p-4 rounded-2xl border border-gray-100 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 text-center active:scale-95`}
+              >
+                {/* Background Decor */}
+                <div className={`absolute -right-2 -bottom-2 w-12 h-12 rounded-full opacity-10 group-hover:scale-150 transition-transform duration-500 ${link.color.split(' ')[0]}`} />
+                
+                <div className={`w-12 h-12 ${link.color} rounded-xl flex items-center justify-center text-2xl mx-auto mb-3 shadow-sm group-hover:rotate-12 transition-transform`}>
+                  {link.icon}
+                </div>
+                
+                <h3 className="text-[13px] font-black text-[#0B1F4B] uppercase tracking-wider mb-1">{link.label}</h3>
+                <p className="text-[10px] text-gray-400 font-bold group-hover:text-[#FF6B00] transition-colors uppercase tracking-tighter">
+                  {link.label === 'Health' ? 'Medical Cover' : link.label === 'Term' ? 'Life Protection' : link.label === 'Motor' ? 'Vehicle Care' : link.label === 'Home' ? 'Asset Safety' : 'Smart Plans'}
+                </p>
+              </motion.button>
+            )) : (
+              [1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="h-32 bg-gray-100 rounded-2xl animate-pulse" />
+              ))
+            )}
+          </div>
+        </motion.div>
 
         {/* AI Recommendations */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Zap size={16} className="text-[#FF6B00]" />
-              <h2 className="text-sm font-semibold text-gray-800">
-                AI Recommendations For You
-              </h2>
+              <Zap size={20} className="text-[#FF6B00]" />
+              <h2 className="text-lg font-bold text-[#0B1F4B] font-outfit">AI Recommended for You</h2>
             </div>
-            <button
-              onClick={handleRefreshRecommendations}
-              className="text-gray-400 hover:text-[#0B1F4B] transition-transform hover:rotate-180 duration-500"
+            <button 
+              onClick={() => {
+                setRefreshSeed(p => p + 1)
+                loadDashboardData()
+              }} 
+              className="text-gray-400 hover:text-[#FF6B00] transition-all hover:rotate-180 duration-500"
             >
-              <RefreshCw size={14} />
+              <RefreshCw size={16} />
             </button>
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-white rounded-xl p-4 animate-pulse">
-                  <div className="w-8 h-8 bg-gray-200 rounded-lg mb-3" />
-                  <div className="h-4 bg-gray-200 rounded mb-2" />
-                  <div className="h-3 bg-gray-100 rounded" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="bg-white rounded-2xl p-6 animate-pulse border border-gray-100 shadow-sm">
+                  <div className="w-12 h-12 bg-gray-100 rounded-xl mb-4" />
+                  <div className="h-5 bg-gray-100 rounded w-3/4 mb-2" />
+                  <div className="h-4 bg-gray-50 rounded w-1/2" />
                 </div>
               ))}
             </div>
           ) : displayedRecs.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {displayedRecs.slice(0, 3).map((rec, i) => (
-                <div
-                  key={rec.name + i}
-                  className="bg-white rounded-xl p-4 border border-gray-100 hover:shadow-xl hover:border-orange-200 transition-all duration-300 hover:-translate-y-1 cursor-pointer"
-                  onClick={() => handleRecommendationClick(rec)}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {displayedRecs.slice(0, 3).map((rec, idx) => (
+                <motion.div 
+                  key={rec.id || idx} 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: idx * 0.1 }}
+                  onClick={() => handleRecommendationClick(rec)} 
+                  className="group relative bg-white/40 backdrop-blur-md rounded-2xl p-6 border border-white hover:border-orange-200 transition-all duration-500 hover:shadow-[0_20px_40px_-15px_rgba(255,107,0,0.1)] cursor-pointer overflow-hidden"
                 >
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-2xl">{rec.icon}</span>
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        rec.urgency === "high"
-                          ? "bg-red-100 text-red-600"
-                          : rec.urgency === "medium"
-                            ? "bg-orange-100 text-orange-600"
-                            : "bg-green-100 text-green-600"
-                      }`}
-                    >
-                      {rec.urgency === "high"
-                        ? "Hot Pick"
-                        : rec.urgency === "medium"
-                          ? "Recommended"
-                          : "You May Like"}
-                    </span>
+                  {/* Glass Background Glow */}
+                  <div className="absolute -right-4 -top-4 w-24 h-24 bg-orange-50 rounded-full blur-3xl group-hover:bg-orange-100 transition-colors opacity-0 group-hover:opacity-100" />
+                  
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
+                      {rec.icon}
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className={`text-[10px] px-2 py-1 rounded-full font-black uppercase tracking-wider mb-1 ${
+                        rec.urgency === "high" ? "bg-red-50 text-red-600" : "bg-orange-50 text-orange-600"
+                      }`}>
+                        {rec.urgency === "high" ? "Hot Pick" : "Best Match"}
+                      </span>
+                      <div className="flex items-center gap-0.5 text-[#FF6B00]">
+                        <span className="text-xs font-black">{rec.matchScore || 90}%</span>
+                        <Star size={8} fill="currentColor" />
+                      </div>
+                    </div>
                   </div>
-                  <h3 className="font-semibold text-gray-800 text-sm mb-1">
-                    {rec.name}
-                  </h3>
-                  <p className="text-gray-400 text-xs mb-2">{rec.type}</p>
+
+                  <h3 className="font-extrabold text-[#0B1F4B] text-base mb-1 group-hover:text-[#FF6B00] transition-colors">{rec.productName || rec.name}</h3>
+                  <p className="text-[#0B1F4B]/50 text-xs font-bold uppercase tracking-widest mb-3">{rec.productType || rec.type}</p>
+                  
                   {rec.reason && (
-                    <p className="text-gray-500 text-xs leading-relaxed line-clamp-2">
-                      {rec.reason}
+                    <p className="text-gray-500 text-xs leading-relaxed line-clamp-2 italic border-l-2 border-orange-100 pl-2">
+                       "{rec.reason}"
                     </p>
                   )}
-                  <div className="flex items-center gap-1 mt-3 text-[#FF6B00]">
-                    <Star size={10} fill="currentColor" />
-                    <span className="text-xs font-medium">AI Selected</span>
-                    <ChevronRight size={12} className="ml-auto" />
+
+                  <div className="mt-5 pt-4 border-t border-gray-50 flex items-center justify-between">
+                    <span className="text-[10px] font-black text-[#0B1F4B] group-hover:text-[#FF6B00] tracking-widest flex items-center gap-1">
+                      VIEW DETAILS
+                    </span>
+                    <ChevronRight size={14} className="text-[#FF6B00] group-hover:translate-x-1 transition-transform" />
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           ) : (
-            <div className="bg-white rounded-xl p-6 text-center border border-dashed border-gray-200 animate-pulse">
-              <p className="text-gray-400 text-sm">
-                Chat with SaarthiAI to get personalized recommendations
-              </p>
-              <button
-                onClick={() => navigate("/chat")}
-                className="mt-3 bg-[#0B1F4B] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-navy-light transition-all hover:scale-105"
+            <div className="bg-white/50 backdrop-blur-sm rounded-3xl p-10 text-center border-2 border-dashed border-gray-200">
+              <p className="text-gray-400 text-sm font-medium">Chat with SaarthiAI to get personalized recommendations</p>
+              <button 
+                onClick={() => navigate("/chat")} 
+                className="mt-4 bg-[#0B1F4B] text-white px-8 py-3 rounded-xl text-sm font-bold shadow-lg shadow-blue-900/20 hover:scale-105 transition active:scale-95"
               >
-                Start Chatting
+                Start AI Analysis
               </button>
             </div>
           )}
+        </motion.div>
+
+        {/* Policy Explorer — Show ALL policies from DB */}
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <Shield size={16} className="text-[#0B1F4B]" />
+            <h2 className="text-sm font-semibold text-gray-800">All Available Policies ({allPolicies.length})</h2>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+            <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {allPolicies.length === 0 ? (
+                <p className="text-center py-8 text-gray-400 text-xs col-span-2">No policies available. Admin needs to seed data.</p>
+              ) : (
+                allPolicies.map(p => (
+                  <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition border border-transparent hover:border-gray-200">
+                    <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center text-xl">
+                      {p.category === 'health' ? "❤️" : p.category === 'term' ? "🛡️" : "🚗"}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-gray-800 text-sm">{p.name}</h4>
+                      <p className="text-[10px] text-gray-400 capitalize">{p.insurer} • {p.category}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-[#0B1F4B] text-xs">₹{Number(p.premium).toLocaleString('en-IN')}</p>
+                      <button onClick={() => window.open(p.url, '_blank')} className="text-[10px] text-[#FF6B00] font-bold hover:underline">Details →</button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Stats Row */}
-        <div className="grid grid-cols-3 gap-3">
+        {/* Feature Banners */}
+        <div className="space-y-3">
           {[
-            {
-              icon: TrendingUp,
-              label: "Policies Viewed",
-              value: Object.keys(getBehaviorData()?.productInterests || {})
-                .length,
-              color: "text-blue-600",
-            },
-            {
-              icon: MessageCircle,
-              label: "AI Chats",
-              value: getBehaviorData()?.chatSessions || "—",
-              color: "text-green-600",
-            },
-            {
-              icon: Star,
-              label: "Saved Plans",
-              value: userProfile?.savedPlans?.length || "—",
-              color: "text-orange-600",
-            },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className="bg-white rounded-xl p-4 border border-gray-100 text-center hover:shadow-md transition-all hover:-translate-y-1"
-            >
-              <stat.icon size={20} className={`${stat.color} mx-auto mb-1`} />
-              <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-              <p className="text-gray-400 text-xs">{stat.label}</p>
+            { path: "/my-policies", icon: <Shield size={22} />, bg: "from-emerald-50 to-teal-50", border: "border-emerald-100", ic: "text-emerald-600", title: "My Policy Vault", sub: "Access your active policies, downloads & renewals." },
+            { path: "/compare", icon: <Shield size={22} />, bg: "from-blue-50 to-indigo-50", border: "border-blue-100", ic: "text-blue-600", title: "Compare Health Plans", sub: "Analyze top policies side-by-side." },
+            { path: "/risk-assessment", icon: <TrendingUp size={22} />, bg: "from-orange-50 to-red-50", border: "border-orange-100", ic: "text-[#FF6B00]", title: "Risk Assessment", sub: "Calculate your exact Protection Score with AI." },
+          ].map(b => (
+            <div key={b.path} onClick={() => navigate(b.path)} className={`bg-gradient-to-r ${b.bg} border ${b.border} rounded-2xl p-5 cursor-pointer hover:shadow-md transition-all group flex items-center justify-between`}>
+              <div className="flex items-center gap-4">
+                <div className={`w-11 h-11 bg-white rounded-full shadow-sm flex items-center justify-center ${b.ic}`}>{b.icon}</div>
+                <div><h3 className="font-bold text-gray-900 text-base">{b.title}</h3><p className="text-xs text-gray-500">{b.sub}</p></div>
+              </div>
+              <ChevronRight size={18} className="text-gray-300 group-hover:translate-x-1 transition-transform" />
             </div>
           ))}
         </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3 pb-6">
+          {[
+            { icon: TrendingUp, label: "Policies Viewed", value: Object.keys(getBehaviorData()?.productInterests || {}).length, color: "text-blue-600" },
+            { icon: MessageCircle, label: "AI Chats", value: getBehaviorData()?.chatSessions || "—", color: "text-green-600" },
+            { icon: Star, label: "Saved Plans", value: userProfile?.savedPlans?.length || "—", color: "text-orange-600" },
+          ].map(s => (
+            <div key={s.label} className="bg-white rounded-xl p-4 border border-gray-100 text-center hover:shadow-md transition hover:-translate-y-1">
+              <s.icon size={20} className={`${s.color} mx-auto mb-1`} />
+              <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+              <p className="text-gray-400 text-xs">{s.label}</p>
+            </div>
+          ))}
+        </div>
+
       </div>
       <ChatWidget />
     </div>
-  );
+  )
 }

@@ -1,8 +1,14 @@
+import path from 'path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
 
   server: {
     proxy: {
@@ -16,6 +22,12 @@ export default defineConfig({
         target: 'https://api.textbee.dev',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/textbee/, ''),
+      },
+      // TextMeBot proxy — resolve CORS issues
+      '/textmebot': {
+        target: 'https://api.textmebot.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/textmebot/, ''),
       },
     },
   },

@@ -244,6 +244,12 @@ export default function ChatWidget() {
                                             Fairness check applied
                                         </div>
                                     )}
+                                    {msg.role === 'assistant' && /https?:\/\//.test(msg.content) && (
+                                        <div className="mt-2 text-[10px] text-green-600 bg-green-50 rounded-lg px-2 py-1 flex items-center gap-1">
+                                            <Shield size={9} className="flex-shrink-0" />
+                                            Links open official insurer websites in a new tab
+                                        </div>
+                                    )}
                                     <p className={`text-xs mt-1 ${msg.role === 'user' ? 'text-blue-200' : 'text-gray-400'}`}>
                                         {msg.timestamp?.toLocaleTimeString?.('en-IN', { hour: '2-digit', minute: '2-digit' })}
                                     </p>

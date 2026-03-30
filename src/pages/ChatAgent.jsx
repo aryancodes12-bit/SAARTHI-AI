@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { ArrowLeft, Send, Loader, Shield, AlertTriangle, Mic, Sparkles, Phone } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { chatWithClaude } from '../ai/claudeAgent'
@@ -25,9 +25,50 @@ const WELCOME_MESSAGE = {
 
 export default function ChatAgent() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, userProfile } = useAuth()
   const [messages, setMessages] = useState([WELCOME_MESSAGE])
   const [input, setInput] = useState('')
+  const hasAutoPrompted = useRef(false)
+
+  // Handle Calculator Redirect Auto-prompt
+  useEffect(() => {
+    if (location.state?.source === 'calculator' && !hasAutoPrompted.current && user) {
+      hasAutoPrompted.current = true
+      const { planName, insurer, sumAssuredDisplay, premium } = location.state
+      const autoMessage = `I want to know more about the **${planName}** plan from **${insurer}**. The quote shows a cover of **${sumAssuredDisplay}** for an annual premium of ₹${Math.round(premium).toLocaleString('en-IN')}. Is this a good choice for me?`
+      
+      // Small delay to ensure UI is ready
+      setTimeout(() => {
+        sendMessage(autoMessage)
+      }, 1500)
+    }
+
+    // Handle Notification Redirect Auto-prompt
+    if (location.state?.source === 'notification' && !hasAutoPrompted.current && user) {
+      hasAutoPrompted.current = true
+      const { eventType, eventLabel } = location.state
+      
+      let eventMsg = ""
+      const type = eventType.toLowerCase()
+      
+      if (type === 'marriage') {
+        eventMsg = "I recently got **Married**! 💍 I want to update my insurance coverage to include my spouse. What are the best family floater or joint term plans you recommend?"
+      } else if (type === 'baby') {
+        eventMsg = "We just welcomed a **New Baby** to the family! 👶 I'm looking for a child education plan or a way to increase my current life cover to secure my child's future."
+      } else if (type === 'home' || type === 'home_purchase') {
+        eventMsg = "I just bought a **New Home**! 🏠 I need to protect my investment with home insurance. Can you suggest plans for fire, theft, and natural disasters?"
+      } else if (type === 'car' || type === 'car_purchase') {
+        eventMsg = "I've purchased a **New Car**! 🚗 I'm looking for comprehensive motor insurance with zero depreciation and roadside assistance."
+      } else {
+        eventMsg = `I have a new life event: **${eventLabel || eventType}**. How should I update my insurance portfolio for this?`
+      }
+
+      setTimeout(() => {
+        sendMessage(eventMsg)
+      }, 1500)
+    }
+  }, [location.state, user])
   const [loading, setLoading] = useState(false)
   const [lifeEventAlert, setLifeEventAlert] = useState(null)
   const [piiWarning, setPiiWarning] = useState(false)

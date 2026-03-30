@@ -5,6 +5,10 @@ import {
   signInWithPhoneNumber,
   signOut,
   onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendEmailVerification,
+  updateProfile,
 } from 'firebase/auth'
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore'
 import { auth, db } from './config'
@@ -93,3 +97,72 @@ export async function logOut() {
 export function onAuthChange(callback) {
   return onAuthStateChanged(auth, callback)
 }
+
+// ─── Email/Password Sign Up ────────────────────────────────────────
+export async function signUpWithEmail(email, password, displayName) {
+  try {
+    const result = await createUserWithEmailAndPassword(auth, email, password)
+    const user = result.user
+
+    // Set display name on Firebase Auth profile
+    await updateProfile(user, { displayName })
+
+    // Send verification email
+    await sendEmailVerification(user)
+
+    // Create Firestore profile
+    await createOrUpdateUserProfile({ ...user, displayName }, 'email')
+
+    return { success: true, user, needsVerification: true }
+  } catch (err) {
+    console.error('Email sign-up error:', err)
+    const msg = friendlyAuthError(err.code)
+    return { success: false, error: msg }
+  }
+}
+
+// ─── Email/Password Sign In ────────────────────────────────────────
+export async function signInWithEmail(email, password) {
+  try {
+    const result = await signInWithEmailAndPassword(auth, email, password)
+    const user = result.user
+
+    if (!user.emailVerified) {
+      await signOut(auth) // Force sign-out until email is verified
+      return { success: false, error: 'Please verify your email before signing in. Check your inbox for the verification link.' }
+    }
+
+    await createOrUpdateUserProfile(user, 'email')
+    return { success: true, user }
+  } catch (err) {
+    console.error('Email sign-in error:', err)
+    return { success: false, error: friendlyAuthError(err.code) }
+  }
+}
+
+// ─── Resend Verification Email ─────────────────────────────────────
+export async function resendVerificationEmail() {
+  try {
+    const user = auth.currentUser
+    if (user) await sendEmailVerification(user)
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+}
+
+// ─── Friendly Error Messages ───────────────────────────────────────
+function friendlyAuthError(code) {
+  const map = {
+    'auth/email-already-in-use': 'An account with this email already exists. Try signing in.',
+    'auth/weak-password': 'Password must be at least 6 characters.',
+    'auth/invalid-email': 'Please enter a valid email address.',
+    'auth/user-not-found': 'No account found with this email. Please sign up.',
+    'auth/wrong-password': 'Incorrect password. Please try again.',
+    'auth/invalid-credential': 'Incorrect email or password. Please try again.',
+    'auth/too-many-requests': 'Too many failed attempts. Please try again later.',
+    'auth/network-request-failed': 'Network error. Check your internet connection.',
+  }
+  return map[code] || 'Something went wrong. Please try again.'
+}
+
